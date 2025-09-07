@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc -p .",
     "demo": "ts-node src/demo.ts",
-    "local-demo": "ANCHOR_PROVIDER_URL=http://127.0.0.1:8899 ANCHOR_WALLET=$HOME/.config/solana/id.json bash -lc 'pkill -f solana-test-validator || true; solana-test-validator --reset --quiet & sleep 1; for i in {1..30}; do solana cluster-version --url $ANCHOR_PROVIDER_URL >/dev/null 2>&1 && break || sleep 1; done; solana airdrop 10 --url $ANCHOR_PROVIDER_URL; anchor build && anchor keys sync && anchor deploy; npx ts-node src/demo.ts'"
+    "local-demo": "ANCHOR_PROVIDER_URL=http://127.0.0.1:8899 ANCHOR_WALLET=$HOME/.config/solana/id.json bash -lc 'pkill -f solana-faucet || true; pkill -f solana-test-validator || true; solana-test-validator --reset --quiet --faucet-port 9901 & sleep 1; for i in {1..30}; do solana cluster-version --url $ANCHOR_PROVIDER_URL >/dev/null 2>&1 && break || sleep 1; done; solana airdrop 10 --url $ANCHOR_PROVIDER_URL; anchor build && anchor keys sync && anchor deploy; npx ts-node src/demo.ts'"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
