@@ -52,6 +52,42 @@ pub mod defighter {
     pub fn admin_update_config(ctx: Context<AdminUpdateConfig>, new_config: state::config::BalanceConfig) -> Result<()> {
         instructions::admin_update_config::handler(ctx, new_config)
     }
+
+    pub fn init_config(
+        ctx: Context<InitConfig>,
+        base: i32,
+        linear_a: i32,
+        dim_k: i32,
+        dim_t: i32,
+        max_level: u16,
+        tie_break_rand: bool,
+        use_dim_bonus: bool,
+        xp_base: u64,
+        xp_tie_bps: u16,
+        xp_loser_bps: u16,
+        upgrade_c0: u64,
+        upgrade_p_bps: u16,
+        rps_win_base: i32,
+        rps_tie_base: i32,
+    ) -> Result<()> {
+        instructions::init_config::handler(
+            ctx,
+            base,
+            linear_a,
+            dim_k,
+            dim_t,
+            max_level,
+            tie_break_rand,
+            use_dim_bonus,
+            xp_base,
+            xp_tie_bps,
+            xp_loser_bps,
+            upgrade_c0,
+            upgrade_p_bps,
+            rps_win_base,
+            rps_tie_base,
+        )
+    }
 }
 
 
