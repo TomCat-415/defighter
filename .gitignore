@@ -1,0 +1,12 @@
+# Solana test validator
+test-ledger/
+validator-ledger/
+
+# Build artifacts
+target/
+node_modules/
+dist/
+
+# OS/editor junk
+.DS_Store
+*.log
