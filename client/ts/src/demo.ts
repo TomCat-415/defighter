@@ -97,6 +97,10 @@ async function main() {
     console.log("Created player B (Builder):", pdaB.toBase58());
   }
 
+  // Clarify authorities vs PDAs
+  console.log("Me (authority):", me.toBase58(), "PlayerA PDA:", pdaA.toBase58());
+  console.log("Opponent (authority):", keypairB.publicKey.toBase58(), "PlayerB PDA:", pdaB.toBase58());
+
   // Read baseline XP before the battle
   const accA0 = (await program.account.player.fetch(pdaA)) as any;
   const accB0 = (await program.account.player.fetch(pdaB)) as any;
@@ -191,6 +195,10 @@ async function main() {
 
   console.log("Battle resolved:", battle.toBase58());
   console.log("Winner:", winnerPk ? (winnerPk as PublicKey).toBase58() : "<none>");
+  if (winnerPk) {
+    console.log("Winner is me?", (winnerPk as PublicKey).equals(me));
+    console.log("Winner is opponent?", (winnerPk as PublicKey).equals(keypairB.publicKey));
+  }
   console.log("XP A (me):", xpA0.toString(), "->", xpA1.toString(), "(Δ", dA.toString(), ")");
   console.log("XP B (opponent):", xpB0.toString(), "->", xpB1.toString(), "(Δ", dB.toString(), ")");
 
