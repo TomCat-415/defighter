@@ -97,6 +97,12 @@ async function main() {
     console.log("Created player B (Builder):", pdaB.toBase58());
   }
 
+  // Read baseline XP before the battle
+  const accA0 = (await program.account.player.fetch(pdaA)) as any;
+  const accB0 = (await program.account.player.fetch(pdaB)) as any;
+  const xpA0 = new BN(accA0.xp);
+  const xpB0 = new BN(accB0.xp);
+
   // 3) Create battle
   const nonce = new BN(Date.now()); // simple unique nonce for PDA seeds
   const [battle] = battlePda(me, keypairB.publicKey, nonce);
@@ -173,7 +179,20 @@ async function main() {
     } as any)
     .rpc();
 
+  // Fetch result + post-battle XP and print summary
+  const battleAcc = (await program.account.battle.fetch(battle)) as any;
+  const winnerPk: PublicKey | null = battleAcc.winner ?? null;
+  const accA1 = (await program.account.player.fetch(pdaA)) as any;
+  const accB1 = (await program.account.player.fetch(pdaB)) as any;
+  const xpA1 = new BN(accA1.xp);
+  const xpB1 = new BN(accB1.xp);
+  const dA = xpA1.sub(xpA0);
+  const dB = xpB1.sub(xpB0);
+
   console.log("Battle resolved:", battle.toBase58());
+  console.log("Winner:", winnerPk ? (winnerPk as PublicKey).toBase58() : "<none>");
+  console.log("XP A (me):", xpA0.toString(), "->", xpA1.toString(), "(Δ", dA.toString(), ")");
+  console.log("XP B (opponent):", xpB0.toString(), "->", xpB1.toString(), "(Δ", dB.toString(), ")");
 
   // Optional: fetch and print battle account
   // const b = await program.account.battle.fetch(battle);

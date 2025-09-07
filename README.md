@@ -38,3 +38,24 @@ npm run local-demo
 - Config PDA is initialized on first run by the demo.
 - Change balance params by calling admin_update_config.
 
+## Troubleshooting (quick checks)
+
+If a terminal run fails:
+
+```bash
+# Same RPC?
+echo $ANCHOR_PROVIDER_URL
+solana config get
+
+# Wallet set?
+echo $ANCHOR_WALLET
+
+# Kill old validator/faucet if ports are busy
+pkill -f solana-faucet || true
+pkill -f solana-test-validator || true
+
+# Then rerun the one-shot
+cd client/ts
+npm run local-demo
+```
+
