@@ -1,12 +1,45 @@
-# Solana test validator
+# --- OS / Editors ---
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+.idea/
+.vscode/
+
+# --- Node / Web ---
+node_modules/
+dist/
+coverage/
+.nyc_output/
+
+# Next.js
+.next/
+.vercel/
+.turbo/
+
+# Env files (keep an example file tracked)
+.env
+.env.*.local
+!.env.example
+
+# --- Solana / Anchor / Rust ---
+# Local validator ledgers
 test-ledger/
 validator-ledger/
 
-# Build artifacts
+# Build outputs
 target/
-node_modules/
-dist/
 
-# OS/editor junk
-.DS_Store
-*.log
+# Program/shared objects
+**/*.so
+
+# Local keypairs / secrets (DON'T push private keys)
+**/*-keypair.json
+**/id.json
+
+# Anchor misc
+.rustc_info.json
