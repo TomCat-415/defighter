@@ -43,3 +43,5 @@ target/
 
 # Anchor misc
 .rustc_info.json
+
+.claude/
