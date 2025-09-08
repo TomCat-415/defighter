@@ -51,6 +51,9 @@ export default function ProfilePage() {
   // Rate limiting protection
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   const [fetchAttempts, setFetchAttempts] = useState<number>(0);
+  
+  // Debug mode for testing create flow
+  const [debugMode, setDebugMode] = useState<boolean>(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -62,8 +65,15 @@ export default function ProfilePage() {
   const [playerPdaAddr] = publicKey ? playerPda(publicKey) : [null];
 
   // Fetch player and config data
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (skipDebugMode = false) => {
     if (!program || !publicKey || !playerPdaAddr) return;
+    
+    // Skip fetching if in debug mode (unless explicitly overridden)
+    if (debugMode && !skipDebugMode) {
+      console.log('Skipping fetch due to debug mode');
+      setLoading(false);
+      return;
+    }
     
     // Rate limiting protection - prevent excessive calls
     const now = Date.now();
@@ -91,19 +101,21 @@ export default function ProfilePage() {
         setConfig(configData);
       }
 
-      // Fetch player
-      const playerInfo = await connection.getAccountInfo(playerPdaAddr);
-      if (playerInfo) {
-        const playerData = await program.account.player.fetch(playerPdaAddr) as any;
-        setPlayer({
-          authority: playerData.authority,
-          class: playerData.class,
-          abilities: playerData.abilities,
-          xp: playerData.xp?.toNumber ? playerData.xp.toNumber() : playerData.xp,
-          elo: 0 // Skip ELO for now
-        });
-      } else {
-        setPlayer(null);
+      // Fetch player (respect debug mode)
+      if (!debugMode) {
+        const playerInfo = await connection.getAccountInfo(playerPdaAddr);
+        if (playerInfo) {
+          const playerData = await program.account.player.fetch(playerPdaAddr) as any;
+          setPlayer({
+            authority: playerData.authority,
+            class: playerData.class,
+            abilities: playerData.abilities,
+            xp: playerData.xp?.toNumber ? playerData.xp.toNumber() : playerData.xp,
+            elo: 0 // Skip ELO for now
+          });
+        } else {
+          setPlayer(null);
+        }
       }
       
       // Reset attempts on success
@@ -123,7 +135,7 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
-  }, [program, connection, publicKey, playerPdaAddr, lastFetchTime, fetchAttempts]);
+  }, [program, connection, publicKey, playerPdaAddr, lastFetchTime, fetchAttempts, debugMode]);
 
   useEffect(() => {
     fetchData();
@@ -161,7 +173,9 @@ export default function ProfilePage() {
         'Fighter created successfully!', 
         `Your ${CLASS_NAMES[selectedClass as keyof typeof CLASS_NAMES]} is ready for battle!`
       );
-      await fetchData(); // Refresh data
+      // Exit debug mode and refresh data
+      setDebugMode(false);
+      await fetchData(true); // Skip debug mode for this fetch
     } catch (error: any) {
       console.error('Failed to create player:', error);
       console.error('Error details:', error.message, error.logs);
@@ -275,7 +289,8 @@ export default function ProfilePage() {
             onClick={() => {
               setFetchAttempts(0);
               setLastFetchTime(0);
-              fetchData();
+              setDebugMode(false);  // Exit debug mode when refreshing
+              fetchData(true);      // Force refresh regardless of debug mode
             }}
             disabled={loading}
             className="text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:opacity-50 px-3 py-1 rounded"
@@ -468,17 +483,37 @@ export default function ProfilePage() {
             <div className="mt-6 p-4 border border-yellow-600/50 rounded-lg bg-yellow-600/10">
               <h4 className="text-sm font-semibold text-yellow-400 mb-2">Debug Mode</h4>
               <p className="text-xs opacity-70 mb-3">
-                To test the create player flow, use a different wallet or connect to a clean localnet.
+                Test the character creation flow without affecting your real player data.
               </p>
-              <button
-                onClick={() => {
-                  setPlayer(null);
-                  showInfoToast('Testing mode', 'Player data temporarily cleared to test create flow');
-                }}
-                className="text-xs bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded"
-              >
-                Simulate No Player (Test Create Flow)
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setDebugMode(true);
+                    setPlayer(null);
+                    showInfoToast('Debug mode ON', 'Character creation flow active');
+                  }}
+                  className="text-xs bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded"
+                >
+                  Test Create Flow
+                </button>
+                {debugMode && (
+                  <button
+                    onClick={() => {
+                      setDebugMode(false);
+                      fetchData(true);
+                      showInfoToast('Debug mode OFF', 'Returning to normal mode');
+                    }}
+                    className="text-xs bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded"
+                  >
+                    Exit Debug Mode
+                  </button>
+                )}
+              </div>
+              {debugMode && (
+                <div className="mt-2 text-xs text-yellow-300">
+                  🟡 Debug mode active - Create flow simulation
+                </div>
+              )}
             </div>
           </div>
         </div>
