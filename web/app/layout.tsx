@@ -1,6 +1,6 @@
 import "./globals.css";
 import { ReactNode } from "react";
-import { Providers } from "../components/Providers";
+import { AppWalletProvider } from "../components/WalletProvider";
 import { Header } from "../components/Header";
 
 export const metadata = {
@@ -12,12 +12,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body className="min-h-screen bg-slate-900 text-slate-100">
-        <Providers>
+        <AppWalletProvider>
           <div className="max-w-6xl mx-auto p-4">
             <Header />
             <main>{children}</main>
           </div>
-        </Providers>
+        </AppWalletProvider>
       </body>
     </html>
   );

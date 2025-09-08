@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function HomePage() {
   return (
     <div className="space-y-6">
@@ -9,6 +11,11 @@ export default function HomePage() {
         <div className="rounded-lg bg-slate-800 p-4">Shitposter</div>
         <div className="rounded-lg bg-slate-800 p-4">Builder</div>
         <div className="rounded-lg bg-slate-800 p-4">VC</div>
+      </div>
+      <div>
+        <Link href="/battle" className="inline-block rounded bg-indigo-600 px-4 py-2">
+          Battle Demo →
+        </Link>
       </div>
     </div>
   );
