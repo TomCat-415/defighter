@@ -1,10 +1,4 @@
-/**
- * Program IDL in camelCase format in order to be used in JS/TS.
- *
- * Note that this is only a type helper and is not the actual IDL. The original
- * IDL can be found at `target/idl/defighter.json`.
- */
-export type Defighter = {
+{
   "address": "HGkRbNawHR3PbA2h1LgqtMNCj6jcrS14c86wDUvS3dTL",
   "metadata": {
     "name": "defighter",
@@ -13,7 +7,7 @@ export type Defighter = {
   },
   "instructions": [
     {
-      "name": "adminUpdateConfig",
+      "name": "admin_update_config",
       "discriminator": [
         224,
         243,
@@ -54,17 +48,17 @@ export type Defighter = {
       ],
       "args": [
         {
-          "name": "newConfig",
+          "name": "new_config",
           "type": {
             "defined": {
-              "name": "balanceConfig"
+              "name": "BalanceConfig"
             }
           }
         }
       ]
     },
     {
-      "name": "commitMove",
+      "name": "commit_move",
       "discriminator": [
         27,
         16,
@@ -102,7 +96,7 @@ export type Defighter = {
       ]
     },
     {
-      "name": "createPlayer",
+      "name": "create_player",
       "discriminator": [
         19,
         178,
@@ -143,7 +137,7 @@ export type Defighter = {
           "signer": true
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -152,14 +146,14 @@ export type Defighter = {
           "name": "class",
           "type": {
             "defined": {
-              "name": "fighterClass"
+              "name": "FighterClass"
             }
           }
         }
       ]
     },
     {
-      "name": "initConfig",
+      "name": "init_config",
       "discriminator": [
         23,
         235,
@@ -196,7 +190,7 @@ export type Defighter = {
           "signer": true
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -206,61 +200,61 @@ export type Defighter = {
           "type": "i32"
         },
         {
-          "name": "linearA",
+          "name": "linear_a",
           "type": "i32"
         },
         {
-          "name": "dimK",
+          "name": "dim_k",
           "type": "i32"
         },
         {
-          "name": "dimT",
+          "name": "dim_t",
           "type": "i32"
         },
         {
-          "name": "maxLevel",
+          "name": "max_level",
           "type": "u16"
         },
         {
-          "name": "tieBreakRand",
+          "name": "tie_break_rand",
           "type": "bool"
         },
         {
-          "name": "useDimBonus",
+          "name": "use_dim_bonus",
           "type": "bool"
         },
         {
-          "name": "xpBase",
+          "name": "xp_base",
           "type": "u64"
         },
         {
-          "name": "xpTieBps",
+          "name": "xp_tie_bps",
           "type": "u16"
         },
         {
-          "name": "xpLoserBps",
+          "name": "xp_loser_bps",
           "type": "u16"
         },
         {
-          "name": "upgradeC0",
+          "name": "upgrade_c0",
           "type": "u64"
         },
         {
-          "name": "upgradePBps",
+          "name": "upgrade_p_bps",
           "type": "u16"
         },
         {
-          "name": "rpsWinBase",
+          "name": "rps_win_base",
           "type": "i32"
         },
         {
-          "name": "rpsTieBase",
+          "name": "rps_tie_base",
           "type": "i32"
         }
       ]
     },
     {
-      "name": "initiateBattle",
+      "name": "initiate_battle",
       "discriminator": [
         248,
         205,
@@ -309,7 +303,7 @@ export type Defighter = {
           "signer": true
         },
         {
-          "name": "systemProgram",
+          "name": "system_program",
           "address": "11111111111111111111111111111111"
         },
         {
@@ -327,17 +321,17 @@ export type Defighter = {
           "type": "u64"
         },
         {
-          "name": "commitDeadlineSlots",
+          "name": "commit_deadline_slots",
           "type": "u64"
         },
         {
-          "name": "revealDeadlineSlots",
+          "name": "reveal_deadline_slots",
           "type": "u64"
         }
       ]
     },
     {
-      "name": "resolveBattle",
+      "name": "resolve_battle",
       "discriminator": [
         112,
         191,
@@ -354,7 +348,7 @@ export type Defighter = {
           "writable": true
         },
         {
-          "name": "playerChallenger",
+          "name": "player_challenger",
           "writable": true,
           "pda": {
             "seeds": [
@@ -372,13 +366,13 @@ export type Defighter = {
               {
                 "kind": "account",
                 "path": "battle.challenger",
-                "account": "battle"
+                "account": "Battle"
               }
             ]
           }
         },
         {
-          "name": "playerOpponent",
+          "name": "player_opponent",
           "writable": true,
           "pda": {
             "seeds": [
@@ -396,7 +390,7 @@ export type Defighter = {
               {
                 "kind": "account",
                 "path": "battle.opponent",
-                "account": "battle"
+                "account": "Battle"
               }
             ]
           }
@@ -427,7 +421,7 @@ export type Defighter = {
       "args": []
     },
     {
-      "name": "revealMove",
+      "name": "reveal_move",
       "discriminator": [
         30,
         133,
@@ -448,7 +442,7 @@ export type Defighter = {
           "signer": true
         },
         {
-          "name": "playerAccount",
+          "name": "player_account",
           "writable": true,
           "pda": {
             "seeds": [
@@ -477,10 +471,10 @@ export type Defighter = {
       ],
       "args": [
         {
-          "name": "moveChoice",
+          "name": "move_choice",
           "type": {
             "defined": {
-              "name": "moveChoice"
+              "name": "MoveChoice"
             }
           }
         },
@@ -496,7 +490,7 @@ export type Defighter = {
       ]
     },
     {
-      "name": "upgradeAbility",
+      "name": "upgrade_ability",
       "discriminator": [
         52,
         72,
@@ -559,7 +553,7 @@ export type Defighter = {
       ],
       "args": [
         {
-          "name": "abilityIndex",
+          "name": "ability_index",
           "type": "u8"
         }
       ]
@@ -567,7 +561,7 @@ export type Defighter = {
   ],
   "accounts": [
     {
-      "name": "balanceConfig",
+      "name": "BalanceConfig",
       "discriminator": [
         136,
         224,
@@ -580,7 +574,7 @@ export type Defighter = {
       ]
     },
     {
-      "name": "battle",
+      "name": "Battle",
       "discriminator": [
         81,
         148,
@@ -593,7 +587,7 @@ export type Defighter = {
       ]
     },
     {
-      "name": "player",
+      "name": "Player",
       "discriminator": [
         205,
         222,
@@ -608,7 +602,7 @@ export type Defighter = {
   ],
   "events": [
     {
-      "name": "abilityUpgraded",
+      "name": "AbilityUpgraded",
       "discriminator": [
         34,
         32,
@@ -621,7 +615,7 @@ export type Defighter = {
       ]
     },
     {
-      "name": "battleInitiated",
+      "name": "BattleInitiated",
       "discriminator": [
         143,
         241,
@@ -634,7 +628,7 @@ export type Defighter = {
       ]
     },
     {
-      "name": "battleResolved",
+      "name": "BattleResolved",
       "discriminator": [
         47,
         156,
@@ -647,7 +641,7 @@ export type Defighter = {
       ]
     },
     {
-      "name": "moveCommitted",
+      "name": "MoveCommitted",
       "discriminator": [
         236,
         104,
@@ -660,7 +654,7 @@ export type Defighter = {
       ]
     },
     {
-      "name": "moveRevealed",
+      "name": "MoveRevealed",
       "discriminator": [
         29,
         51,
@@ -673,7 +667,7 @@ export type Defighter = {
       ]
     },
     {
-      "name": "xpAwarded",
+      "name": "XpAwarded",
       "discriminator": [
         166,
         104,
@@ -689,73 +683,73 @@ export type Defighter = {
   "errors": [
     {
       "code": 6000,
-      "name": "notEnoughXp",
+      "name": "NotEnoughXP",
       "msg": "Not enough XP to upgrade"
     },
     {
       "code": 6001,
-      "name": "invalidAbility",
+      "name": "InvalidAbility",
       "msg": "Invalid ability index"
     },
     {
       "code": 6002,
-      "name": "notInBattle",
+      "name": "NotInBattle",
       "msg": "Player not in this battle"
     },
     {
       "code": 6003,
-      "name": "invalidReveal",
+      "name": "InvalidReveal",
       "msg": "Reveal does not match commitment"
     },
     {
       "code": 6004,
-      "name": "alreadyCommitted",
+      "name": "AlreadyCommitted",
       "msg": "Already committed"
     },
     {
       "code": 6005,
-      "name": "alreadyRevealed",
+      "name": "AlreadyRevealed",
       "msg": "Already revealed"
     },
     {
       "code": 6006,
-      "name": "deadlinePassed",
+      "name": "DeadlinePassed",
       "msg": "Commit deadline passed"
     },
     {
       "code": 6007,
-      "name": "revealDeadlinePassed",
+      "name": "RevealDeadlinePassed",
       "msg": "Reveal deadline passed"
     },
     {
       "code": 6008,
-      "name": "notReadyToResolve",
+      "name": "NotReadyToResolve",
       "msg": "Too early to resolve"
     },
     {
       "code": 6009,
-      "name": "alreadyResolved",
+      "name": "AlreadyResolved",
       "msg": "Battle already resolved"
     },
     {
       "code": 6010,
-      "name": "notConfigured",
+      "name": "NotConfigured",
       "msg": "Config not found"
     },
     {
       "code": 6011,
-      "name": "maxLevel",
+      "name": "MaxLevel",
       "msg": "Ability exceeds max level"
     },
     {
       "code": 6012,
-      "name": "invalidClassMove",
+      "name": "InvalidClassMove",
       "msg": "Move does not match player class"
     }
   ],
   "types": [
     {
-      "name": "abilityUpgraded",
+      "name": "AbilityUpgraded",
       "type": {
         "kind": "struct",
         "fields": [
@@ -764,11 +758,11 @@ export type Defighter = {
             "type": "pubkey"
           },
           {
-            "name": "abilityIndex",
+            "name": "ability_index",
             "type": "u8"
           },
           {
-            "name": "newLevel",
+            "name": "new_level",
             "type": "u16"
           },
           {
@@ -779,7 +773,7 @@ export type Defighter = {
       }
     },
     {
-      "name": "balanceConfig",
+      "name": "BalanceConfig",
       "type": {
         "kind": "struct",
         "fields": [
@@ -792,62 +786,62 @@ export type Defighter = {
             "type": "i32"
           },
           {
-            "name": "linearA",
+            "name": "linear_a",
             "type": "i32"
           },
           {
-            "name": "dimK",
+            "name": "dim_k",
             "type": "i32"
           },
           {
-            "name": "dimT",
+            "name": "dim_t",
             "type": "i32"
           },
           {
-            "name": "maxLevel",
+            "name": "max_level",
             "type": "u16"
           },
           {
-            "name": "tieBreakRand",
+            "name": "tie_break_rand",
             "type": "bool"
           },
           {
-            "name": "useDimBonus",
+            "name": "use_dim_bonus",
             "type": "bool"
           },
           {
-            "name": "xpBase",
+            "name": "xp_base",
             "type": "u64"
           },
           {
-            "name": "xpTieBps",
+            "name": "xp_tie_bps",
             "type": "u16"
           },
           {
-            "name": "xpLoserBps",
+            "name": "xp_loser_bps",
             "type": "u16"
           },
           {
-            "name": "upgradeC0",
+            "name": "upgrade_c0",
             "type": "u64"
           },
           {
-            "name": "upgradePBps",
+            "name": "upgrade_p_bps",
             "type": "u16"
           },
           {
-            "name": "rpsWinBase",
+            "name": "rps_win_base",
             "type": "i32"
           },
           {
-            "name": "rpsTieBase",
+            "name": "rps_tie_base",
             "type": "i32"
           }
         ]
       }
     },
     {
-      "name": "battle",
+      "name": "Battle",
       "type": {
         "kind": "struct",
         "fields": [
@@ -867,24 +861,24 @@ export type Defighter = {
             "name": "state",
             "type": {
               "defined": {
-                "name": "battleState"
+                "name": "BattleState"
               }
             }
           },
           {
-            "name": "createdSlot",
+            "name": "created_slot",
             "type": "u64"
           },
           {
-            "name": "commitDeadlineSlot",
+            "name": "commit_deadline_slot",
             "type": "u64"
           },
           {
-            "name": "revealDeadlineSlot",
+            "name": "reveal_deadline_slot",
             "type": "u64"
           },
           {
-            "name": "commitChallenger",
+            "name": "commit_challenger",
             "type": {
               "option": {
                 "array": [
@@ -895,7 +889,7 @@ export type Defighter = {
             }
           },
           {
-            "name": "commitOpponent",
+            "name": "commit_opponent",
             "type": {
               "option": {
                 "array": [
@@ -906,21 +900,21 @@ export type Defighter = {
             }
           },
           {
-            "name": "revealChallenger",
+            "name": "reveal_challenger",
             "type": {
               "option": {
                 "defined": {
-                  "name": "moveChoice"
+                  "name": "MoveChoice"
                 }
               }
             }
           },
           {
-            "name": "revealOpponent",
+            "name": "reveal_opponent",
             "type": {
               "option": {
                 "defined": {
-                  "name": "moveChoice"
+                  "name": "MoveChoice"
                 }
               }
             }
@@ -935,7 +929,7 @@ export type Defighter = {
       }
     },
     {
-      "name": "battleInitiated",
+      "name": "BattleInitiated",
       "type": {
         "kind": "struct",
         "fields": [
@@ -952,18 +946,18 @@ export type Defighter = {
             "type": "pubkey"
           },
           {
-            "name": "commitDeadlineSlot",
+            "name": "commit_deadline_slot",
             "type": "u64"
           },
           {
-            "name": "revealDeadlineSlot",
+            "name": "reveal_deadline_slot",
             "type": "u64"
           }
         ]
       }
     },
     {
-      "name": "battleResolved",
+      "name": "BattleResolved",
       "type": {
         "kind": "struct",
         "fields": [
@@ -976,78 +970,78 @@ export type Defighter = {
             "type": "pubkey"
           },
           {
-            "name": "challengerScore",
+            "name": "challenger_score",
             "type": "i32"
           },
           {
-            "name": "opponentScore",
+            "name": "opponent_score",
             "type": "i32"
           }
         ]
       }
     },
     {
-      "name": "battleState",
+      "name": "BattleState",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "waitingForCommits"
+            "name": "WaitingForCommits"
           },
           {
-            "name": "waitingForReveals"
+            "name": "WaitingForReveals"
           },
           {
-            "name": "resolved"
+            "name": "Resolved"
           }
         ]
       }
     },
     {
-      "name": "fighterClass",
+      "name": "FighterClass",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "shitposter"
+            "name": "Shitposter"
           },
           {
-            "name": "builder"
+            "name": "Builder"
           },
           {
-            "name": "vc"
+            "name": "VC"
           }
         ]
       }
     },
     {
-      "name": "moveChoice",
+      "name": "MoveChoice",
       "type": {
         "kind": "enum",
         "variants": [
           {
-            "name": "memeBomb"
+            "name": "MemeBomb"
           },
           {
-            "name": "copypastaStorm"
+            "name": "CopypastaStorm"
           },
           {
-            "name": "shipIt"
+            "name": "ShipIt"
           },
           {
-            "name": "testnetDeploy"
+            "name": "TestnetDeploy"
           },
           {
-            "name": "seriesACannon"
+            "name": "SeriesACannon"
           },
           {
-            "name": "dueDiligenceDelay"
+            "name": "DueDiligenceDelay"
           }
         ]
       }
     },
     {
-      "name": "moveCommitted",
+      "name": "MoveCommitted",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1063,7 +1057,7 @@ export type Defighter = {
       }
     },
     {
-      "name": "moveRevealed",
+      "name": "MoveRevealed",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1076,10 +1070,10 @@ export type Defighter = {
             "type": "pubkey"
           },
           {
-            "name": "moveChoice",
+            "name": "move_choice",
             "type": {
               "defined": {
-                "name": "moveChoice"
+                "name": "MoveChoice"
               }
             }
           }
@@ -1087,7 +1081,7 @@ export type Defighter = {
       }
     },
     {
-      "name": "player",
+      "name": "Player",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1099,7 +1093,7 @@ export type Defighter = {
             "name": "class",
             "type": {
               "defined": {
-                "name": "fighterClass"
+                "name": "FighterClass"
               }
             }
           },
@@ -1128,7 +1122,7 @@ export type Defighter = {
       }
     },
     {
-      "name": "xpAwarded",
+      "name": "XpAwarded",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1144,4 +1138,4 @@ export type Defighter = {
       }
     }
   ]
-};
+}

@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "dev:localnet": "cp .env.localnet .env.local && next dev",
+    "dev:devnet": "cp .env.devnet .env.local && next dev"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
@@ -31,5 +33,3 @@
     "typescript": "^5.5.4"
   }
 }
-
-

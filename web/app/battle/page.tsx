@@ -11,6 +11,7 @@ export default function BattlePage() {
   const { connection } = useConnection();
   const { publicKey, wallet } = useWallet();
   const [log, setLog] = useState<string[]>([]);
+  const [airdropping, setAirdropping] = useState<boolean>(false);
 
   async function ensureFunds(
     pk: PublicKey,
@@ -73,6 +74,14 @@ export default function BattlePage() {
       setLog((l) => ["Created player B", ...l]);
     }
 
+    // Baseline XP
+    const accA0 = await connection.getAccountInfo(pdaA)
+      ? (await program.account.player.fetch(pdaA)) as any
+      : null;
+    const accB0 = await connection.getAccountInfo(pdaB)
+      ? (await program.account.player.fetch(pdaB)) as any
+      : null;
+
     const nonce = new BN(Date.now());
     const [battle] = battlePda(me, bot.publicKey, nonce);
     await program.methods.initiateBattle(bot.publicKey, nonce, new BN(50), new BN(50)).accounts({ battle, challenger: me, systemProgram: SystemProgram.programId, clock: (window as any).anchor?.web3?.SYSVAR_CLOCK_PUBKEY || new PublicKey("SysvarC1ock11111111111111111111111111111111") } as any).rpc();
@@ -94,6 +103,48 @@ export default function BattlePage() {
 
     await program.methods.resolveBattle().accounts({ battle, playerChallenger: pdaA, playerOpponent: pdaB, config: cfg, clock: new PublicKey("SysvarC1ock11111111111111111111111111111111") } as any).rpc();
     setLog((l) => ["Battle resolved", ...l]);
+
+    // Post-battle summary: winner + XP deltas
+    try {
+      const bAcc = (await program.account.battle.fetch(battle)) as any;
+      const winnerPk: PublicKey | null = bAcc.winner ?? null;
+      const accA1 = (await program.account.player.fetch(pdaA)) as any;
+      const accB1 = (await program.account.player.fetch(pdaB)) as any;
+      const xpA0 = accA0 ? BigInt(accA0.xp.toString ? accA0.xp.toString() : accA0.xp) : 0n;
+      const xpB0 = accB0 ? BigInt(accB0.xp.toString ? accB0.xp.toString() : accB0.xp) : 0n;
+      const xpA1 = BigInt(accA1.xp.toString ? accA1.xp.toString() : accA1.xp);
+      const xpB1 = BigInt(accB1.xp.toString ? accB1.xp.toString() : accB1.xp);
+      const dA = xpA1 - xpA0;
+      const dB = xpB1 - xpB0;
+      setLog((l) => [
+        `Winner: ${winnerPk ? (winnerPk as PublicKey).toBase58() : "<none>"}`,
+        `XP A: ${xpA0.toString()} -> ${xpA1.toString()} (Δ ${dA.toString()})`,
+        `XP B: ${xpB0.toString()} -> ${xpB1.toString()} (Δ ${dB.toString()})`,
+        ...l,
+      ]);
+    } catch (e) {
+      // ignore summary errors
+    }
+  }
+
+  async function airdropSelf(amountSol = 2) {
+    if (!connection || !publicKey) return;
+    setAirdropping(true);
+    try {
+      const sig = await connection.requestAirdrop(publicKey, amountSol * LAMPORTS_PER_SOL);
+      await connection.confirmTransaction(sig, "confirmed");
+      setLog((l) => [
+        `Airdropped ${amountSol} SOL to ${publicKey.toBase58()}`,
+        ...l,
+      ]);
+    } catch (e: any) {
+      setLog((l) => [
+        `Airdrop failed (${e?.message || e}). Use faucet: https://faucet.solana.com/devnet`,
+        ...l,
+      ]);
+    } finally {
+      setAirdropping(false);
+    }
   }
 
   return (
@@ -101,6 +152,13 @@ export default function BattlePage() {
       <h2 className="text-2xl font-bold">Battle Demo</h2>
       <button className="rounded bg-indigo-600 px-4 py-2" onClick={runDemo} disabled={!publicKey}>
         {publicKey ? "Run Demo Battle" : "Connect wallet first"}
+      </button>
+      <button
+        className="rounded bg-slate-700 px-4 py-2 ml-3"
+        onClick={() => airdropSelf(2)}
+        disabled={!publicKey || airdropping}
+      >
+        {airdropping ? "Airdropping…" : "Airdrop 2 SOL"}
       </button>
       <div className="space-y-1">
         {log.map((l, i) => (
