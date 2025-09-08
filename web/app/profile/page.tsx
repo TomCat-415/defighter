@@ -47,6 +47,10 @@ export default function ProfilePage() {
   
   // Network mismatch warning
   const [networkMismatch, setNetworkMismatch] = useState(false);
+  
+  // Rate limiting protection
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  const [fetchAttempts, setFetchAttempts] = useState<number>(0);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -61,26 +65,36 @@ export default function ProfilePage() {
   const fetchData = useCallback(async () => {
     if (!program || !publicKey || !playerPdaAddr) return;
     
+    // Rate limiting protection - prevent excessive calls
+    const now = Date.now();
+    if (now - lastFetchTime < 2000) { // 2 second minimum between calls
+      console.log('Skipping fetch due to rate limiting');
+      return;
+    }
+    
+    // Exponential backoff for repeated failures
+    if (fetchAttempts > 5) {
+      console.log('Too many fetch attempts, stopping');
+      showErrorToast('Connection issues', 'Please refresh the page or try again later');
+      return;
+    }
+    
+    setLastFetchTime(now);
     setLoading(true);
+    
     try {
       // Fetch config
       const [configAddr] = configPda();
       const configInfo = await connection.getAccountInfo(configAddr);
       if (configInfo) {
-        console.log('Config account exists, fetching...');
         const configData = await program.account.balanceConfig.fetch(configAddr) as any;
-        console.log('Config data:', configData);
         setConfig(configData);
-      } else {
-        console.log('Config account does not exist');
       }
 
       // Fetch player
       const playerInfo = await connection.getAccountInfo(playerPdaAddr);
       if (playerInfo) {
-        console.log('Player account exists, fetching...', playerPdaAddr.toBase58());
         const playerData = await program.account.player.fetch(playerPdaAddr) as any;
-        console.log('Player data:', playerData);
         setPlayer({
           authority: playerData.authority,
           class: playerData.class,
@@ -89,18 +103,27 @@ export default function ProfilePage() {
           elo: 0 // Skip ELO for now
         });
       } else {
-        console.log('Player account does not exist', playerPdaAddr.toBase58());
         setPlayer(null);
       }
+      
+      // Reset attempts on success
+      setFetchAttempts(0);
     } catch (error: any) {
       console.error('Failed to fetch data:', error);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-      showErrorToast('Failed to load', error.message || 'Could not fetch player data');
+      setFetchAttempts(prev => prev + 1);
+      
+      // Only show toast for first few attempts to avoid spam
+      if (fetchAttempts < 3) {
+        if (error.message?.includes('429') || error.message?.includes('rate')) {
+          showErrorToast('Rate limited', 'Slowing down requests...');
+        } else {
+          showErrorToast('Failed to load', error.message || 'Could not fetch player data');
+        }
+      }
     } finally {
       setLoading(false);
     }
-  }, [program, connection, publicKey, playerPdaAddr]);
+  }, [program, connection, publicKey, playerPdaAddr, lastFetchTime, fetchAttempts]);
 
   useEffect(() => {
     fetchData();
@@ -108,11 +131,22 @@ export default function ProfilePage() {
 
   // Create player
   const createPlayer = async () => {
-    if (!program || !publicKey || !playerPdaAddr) return;
+    if (!program || !publicKey || !playerPdaAddr) {
+      showErrorToast('Error', 'Wallet not connected or program not available');
+      return;
+    }
+    
+    if (!selectedClass) {
+      showErrorToast('Error', 'Please select a class first');
+      return;
+    }
     
     setCreating(true);
     try {
+      console.log('Creating player with class:', selectedClass);
       const classVariant = { [selectedClass]: {} };
+      console.log('Class variant:', classVariant);
+      
       const tx = await program.methods
         .createPlayer(classVariant)
         .accounts({
@@ -122,11 +156,16 @@ export default function ProfilePage() {
         } as any)
         .rpc();
       
-      showSuccessToast('Player created!', `Class: ${CLASS_NAMES[selectedClass as keyof typeof CLASS_NAMES]}`);
+      console.log('Player created! Transaction:', tx);
+      showSuccessToast(
+        'Fighter created successfully!', 
+        `Your ${CLASS_NAMES[selectedClass as keyof typeof CLASS_NAMES]} is ready for battle!`
+      );
       await fetchData(); // Refresh data
     } catch (error: any) {
       console.error('Failed to create player:', error);
-      showErrorToast('Creation failed', error.message || 'Unknown error');
+      console.error('Error details:', error.message, error.logs);
+      showErrorToast('Creation failed', error.message || 'Unknown error occurred');
     } finally {
       setCreating(false);
     }
@@ -230,7 +269,28 @@ export default function ProfilePage() {
 
       {/* Diagnostics */}
       <div className="rounded-lg bg-slate-800 p-4 space-y-2">
-        <h3 className="font-semibold text-lg">Diagnostics</h3>
+        <div className="flex justify-between items-center">
+          <h3 className="font-semibold text-lg">Diagnostics</h3>
+          <button
+            onClick={() => {
+              setFetchAttempts(0);
+              setLastFetchTime(0);
+              fetchData();
+            }}
+            disabled={loading}
+            className="text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:opacity-50 px-3 py-1 rounded"
+          >
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
+        
+        {fetchAttempts > 0 && (
+          <div className="text-xs bg-yellow-600/20 border border-yellow-600/50 rounded p-2">
+            Connection issues detected. Attempts: {fetchAttempts}/5
+            {fetchAttempts >= 5 && ' - Please refresh the page'}
+          </div>
+        )}
+        
         <div className="grid gap-2 text-sm">
           <div className="flex justify-between">
             <span className="opacity-70">RPC:</span>
@@ -302,7 +362,14 @@ export default function ProfilePage() {
           
           <div className="grid gap-4">
             {Object.entries(CLASS_NAMES).map(([key, name]) => (
-              <label key={key} className="flex items-center space-x-3 cursor-pointer">
+              <label 
+                key={key} 
+                className={`flex items-center space-x-3 cursor-pointer p-3 rounded-lg border-2 transition-colors ${
+                  selectedClass === key 
+                    ? 'border-indigo-500 bg-indigo-500/20' 
+                    : 'border-slate-600 hover:border-slate-500'
+                }`}
+              >
                 <input
                   type="radio"
                   name="class"
@@ -395,6 +462,23 @@ export default function ProfilePage() {
                   </div>
                 );
               })}
+            </div>
+            
+            {/* Debug: Test Create Flow Button */}
+            <div className="mt-6 p-4 border border-yellow-600/50 rounded-lg bg-yellow-600/10">
+              <h4 className="text-sm font-semibold text-yellow-400 mb-2">Debug Mode</h4>
+              <p className="text-xs opacity-70 mb-3">
+                To test the create player flow, use a different wallet or connect to a clean localnet.
+              </p>
+              <button
+                onClick={() => {
+                  setPlayer(null);
+                  showInfoToast('Testing mode', 'Player data temporarily cleared to test create flow');
+                }}
+                className="text-xs bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded"
+              >
+                Simulate No Player (Test Create Flow)
+              </button>
             </div>
           </div>
         </div>

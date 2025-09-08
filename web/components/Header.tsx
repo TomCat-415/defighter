@@ -1,5 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 
 // Render wallet button client-side only to avoid SSR hydration mismatch
 const WalletMultiButton = dynamic(
@@ -10,7 +11,27 @@ const WalletMultiButton = dynamic(
 export function Header() {
   return (
     <header className="flex items-center justify-between py-4">
-      <h1 className="text-xl font-semibold">DeFighter</h1>
+      <div className="flex items-center gap-6">
+        <Link href="/">
+          <h1 className="text-xl font-semibold hover:text-indigo-400 transition-colors cursor-pointer">
+            DeFighter
+          </h1>
+        </Link>
+        <nav className="flex items-center gap-4">
+          <Link 
+            href="/profile" 
+            className="text-sm hover:text-indigo-400 transition-colors"
+          >
+            Profile
+          </Link>
+          <Link 
+            href="/battle" 
+            className="text-sm hover:text-indigo-400 transition-colors"
+          >
+            Battle
+          </Link>
+        </nav>
+      </div>
       <div className="flex items-center gap-3">
         <span className="text-xs opacity-70">RPC: {process.env.NEXT_PUBLIC_RPC_URL || "local"}</span>
         <WalletMultiButton className="btn" />
