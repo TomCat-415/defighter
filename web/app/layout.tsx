@@ -2,6 +2,7 @@ import "./globals.css";
 import { ReactNode } from "react";
 import { AppWalletProvider } from "../components/WalletProvider";
 import { Header } from "../components/Header";
+import ToastProvider from "../components/Toast";
 
 export const metadata = {
   title: "DeFighter",
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <Header />
             <main>{children}</main>
           </div>
+          <ToastProvider />
         </AppWalletProvider>
       </body>
     </html>
