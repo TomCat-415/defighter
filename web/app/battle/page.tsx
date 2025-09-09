@@ -176,19 +176,7 @@ export default function BattlePage() {
       const nonce = new BN(Date.now());
       const [battle] = battlePda(me, bot.publicKey, nonce);
 
-      // Optional debug: inspect required signers for initiateBattle
-      const txInspect = await program.methods
-        .initiateBattle(bot.publicKey, nonce, new BN(50), new BN(50))
-        .accounts({
-          battle,
-          challenger: me,
-          systemProgram: SystemProgram.programId,
-          clock: new PublicKey("SysvarC1ock11111111111111111111111111111111"),
-        } as any)
-        .transaction();
-      console.log("Required signers (initiateBattle):", txInspect.signatures.map((s) => s.publicKey.toBase58()));
-
-      // NUCLEAR OPTION: Create a fresh Transaction object from scratch
+      // Create initiate battle transaction
       const instruction = await program.methods
         .initiateBattle(bot.publicKey, nonce, new BN(50), new BN(50))
         .accounts({
