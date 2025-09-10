@@ -58,4 +58,3 @@ pkill -f solana-test-validator || true
 cd client/ts
 npm run local-demo
 ```
-
