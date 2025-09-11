@@ -14,6 +14,9 @@ import {
   copyToClipboard 
 } from "@/lib/profile-utils";
 import { showSuccessToast, showErrorToast, showInfoToast } from "@/lib/toast";
+import dynamic from "next/dynamic";
+
+const CustomizationPanel = dynamic(() => import("@/components/character/CustomizationPanel"), { ssr: false });
 
 interface PlayerData {
   authority: PublicKey;
@@ -54,6 +57,7 @@ export default function ProfilePage() {
   
   // Debug mode for testing create flow
   const [debugMode, setDebugMode] = useState<boolean>(false);
+  const [showCustomization, setShowCustomization] = useState<boolean>(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -527,7 +531,7 @@ export default function ProfilePage() {
             {/* Customize Character CTA */}
             <div className="mt-6 flex justify-end">
               <button
-                onClick={() => showInfoToast('Customization', 'Character customization coming soon')}
+                onClick={() => setShowCustomization(true)}
                 className="bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-lg"
               >
                 Customize Character
@@ -535,6 +539,15 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+      )}
+      {showCustomization && (
+        <CustomizationPanel
+          onSave={(data) => {
+            showSuccessToast('Saved', `Gender: ${data.gender}, Palette: ${data.palette}`);
+            setShowCustomization(false);
+          }}
+          onClose={() => setShowCustomization(false)}
+        />
       )}
     </div>
   );
