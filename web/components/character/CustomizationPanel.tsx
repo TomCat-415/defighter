@@ -5,7 +5,11 @@ import AvatarPreview from "@/components/character/AvatarPreview";
 import GenderSelector from "@/components/character/GenderSelector";
 import PalettePicker from "@/components/character/PalettePicker";
 import { CRYPTO_PALETTES, SKIN_TONES } from "@/components/character/constants";
-import { saveCustomizationDraft } from "@/lib/customization";
+import { saveCustomizationDraft, createOrUpdateCustomization, hasCustomizationMethods } from "@/lib/customization";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { getProgram } from "@/lib/program";
+import { playerPda } from "@/lib/pdas";
+import { showErrorToast, showSuccessToast, showInfoToast } from "@/lib/toast";
 
 type Gender = "male" | "female" | "nonbinary";
 
@@ -36,6 +40,9 @@ export default function CustomizationPanel({
     lipstick: initialFlags?.lipstick ?? (initialGender === "nonbinary" ? true : false),
     glasses: initialFlags?.glasses ?? false,
   });
+  const [saving, setSaving] = useState(false);
+  const { connection } = useConnection();
+  const { publicKey, wallet } = useWallet();
 
   const primaryColor = CRYPTO_PALETTES[paletteName]?.[0] || "#00D4FF";
 
@@ -140,10 +147,47 @@ export default function CustomizationPanel({
               Cancel
             </button>
             <button
-              onClick={() => onSave?.({ gender, palette: paletteName, skinTone })}
-              className="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-700"
+              onClick={async () => {
+                onSave?.({ gender, palette: paletteName, skinTone });
+                // Try on-chain save if IDL supports it
+                if (!publicKey || !wallet) return;
+                try {
+                  const program = getProgram(connection, wallet.adapter as any);
+                  if (!hasCustomizationMethods(program)) {
+                    showInfoToast('Saved locally', 'Rebuild program/IDL to enable on-chain save');
+                    return;
+                  }
+                  const [pda] = playerPda(publicKey);
+                  // Map UI to indices
+                  const genders: Record<string, number> = { male: 0, female: 1, nonbinary: 2 } as const as any;
+                  const paletteNames = Object.keys(CRYPTO_PALETTES);
+                  const paletteIndex = Math.max(0, paletteNames.indexOf(paletteName));
+                  const skinToneIndex = Math.max(0, SKIN_TONES.indexOf(skinTone));
+                  const faceFlags = (flags.mustache ? 1 << 0 : 0) | (flags.lipstick ? 1 << 1 : 0) | (flags.glasses ? 1 << 2 : 0);
+                  const dto = {
+                    gender: genders[gender],
+                    paletteIndex,
+                    skinToneIndex,
+                    hairStyleIndex: 0,
+                    hairColorIndex: 0,
+                    outfitStyleIndex: 0,
+                    outfitColorIndex: 0,
+                    faceFlags,
+                    accessorySlots: [255, 255],
+                  } as any;
+                  setSaving(true);
+                  const sig = await createOrUpdateCustomization(program, pda, publicKey, dto);
+                  showSuccessToast('Customization saved on-chain', sig);
+                } catch (e: any) {
+                  showErrorToast('Save failed', e?.message || 'Unknown error');
+                } finally {
+                  setSaving(false);
+                }
+              }}
+              disabled={saving}
+              className="px-4 py-2 rounded bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800 disabled:opacity-50"
             >
-              Save
+              {saving ? 'Saving…' : 'Save'}
             </button>
           </div>
         </div>
