@@ -4,7 +4,7 @@ import type { Gender } from "@/components/character/constants";
 
 interface AvatarPreviewProps {
   gender: Gender;
-  primaryColor: string;
+  primaryColor: string; // palette primary; used for border/collar
   skinTone: string;
   flags?: {
     mustache?: boolean;
@@ -37,9 +37,10 @@ export default function AvatarPreview({
 
     ctx.clearRect(0, 0, 64, 64);
 
-    // Background ring using primaryColor (subtle frame)
+    // Border/frame uses primaryColor
     ctx.fillStyle = primaryColor;
     ctx.fillRect(0, 0, 64, 64);
+    // Inner background derived from primaryColor darkness
     ctx.fillStyle = "#0a0d14";
     ctx.fillRect(2, 2, 60, 60);
 
@@ -50,7 +51,7 @@ export default function AvatarPreview({
     // Neck
     ctx.fillRect(28, 34, 8, 4);
 
-    // Torso (collar)
+    // Torso (collar/shirt) uses primaryColor as well
     ctx.fillStyle = primaryColor;
     ctx.fillRect(18, 38, 28, 10);
 

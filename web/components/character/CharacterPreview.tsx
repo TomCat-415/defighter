@@ -4,7 +4,7 @@ import type { Gender } from "@/components/character/constants";
 
 interface CharacterPreviewProps {
   gender: Gender;
-  primaryColor: string; // From selected crypto palette
+  primaryColor: string; // From selected crypto palette; used as outfit color
   skinTone: string;     // Hex color for skin
   scale?: number;       // Canvas upscaling factor (default 8)
 }
@@ -42,7 +42,7 @@ export default function CharacterPreview({
     ctx.fillStyle = skinTone;
     ctx.fillRect(12, 4, 8, 8);
 
-    // Body
+    // Body outfit uses primaryColor to reflect palette selection
     ctx.fillStyle = primaryColor;
     ctx.fillRect(11, 12, 10, 8);
 

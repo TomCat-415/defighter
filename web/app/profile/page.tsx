@@ -18,6 +18,7 @@ import dynamic from "next/dynamic";
 import AvatarPreview from "@/components/character/AvatarPreview";
 import CharacterPreview from "@/components/character/CharacterPreview";
 import { customizationPda } from "@/lib/pdas";
+import { CRYPTO_PALETTES } from "@/components/character/constants";
 import { saveCustomizationDraft, loadCustomizationDraft } from "@/lib/customization";
 
 const CustomizationPanel = dynamic(() => import("@/components/character/CustomizationPanel"), { ssr: false });
@@ -464,12 +465,18 @@ export default function ProfilePage() {
                 <div className="text-sm font-semibold mb-2">Avatar</div>
                 <div className="flex items-center justify-center">
                   {/* Placeholder visuals until on-chain decode; use draft if available */}
+                  {(() => {
+                    const paletteName = customizationDraft?.paletteName as string | undefined;
+                    const primary = paletteName && CRYPTO_PALETTES[paletteName]?.[0]
+                      ? CRYPTO_PALETTES[paletteName][0]
+                      : "#00D4FF";
                   <AvatarPreview
                     gender={(customizationDraft?.genderName || 'male') as any}
-                    primaryColor="#00D4FF"
-                    skinTone="#C89478"
-                    flags={{ mustache: false, lipstick: false, glasses: true }}
+                    primaryColor={primary}
+                    skinTone={customizationDraft?.skinToneHex || "#C89478"}
+                    flags={customizationDraft?.flags || { glasses: true }}
                   />
+                  })()}
                 </div>
                 {!customizationExists && (
                   <div className="text-xs opacity-70 mt-2">No on-chain customization yet</div>
@@ -478,7 +485,19 @@ export default function ProfilePage() {
               <div className="rounded-lg bg-slate-700/50 p-4">
                 <div className="text-sm font-semibold mb-2">Battle Sprite</div>
                 <div className="flex items-center justify-center">
-                  <CharacterPreview gender={(customizationDraft?.genderName || 'male') as any} primaryColor="#00D4FF" skinTone="#C89478" />
+                  {(() => {
+                    const paletteName = customizationDraft?.paletteName as string | undefined;
+                    const primary = paletteName && CRYPTO_PALETTES[paletteName]?.[0]
+                      ? CRYPTO_PALETTES[paletteName][0]
+                      : "#00D4FF";
+                    return (
+                      <CharacterPreview
+                        gender={(customizationDraft?.genderName || 'male') as any}
+                        primaryColor={primary}
+                        skinTone={customizationDraft?.skinToneHex || "#C89478"}
+                      />
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -595,7 +614,7 @@ export default function ProfilePage() {
                 genderName: data.gender as any,
                 paletteName: data.palette,
                 skinToneHex: data.skinTone,
-                flags: {},
+                flags: data.flags || {},
               };
               saveCustomizationDraft(publicKey, draft as any);
               setCustomizationDraft(draft);

@@ -18,7 +18,7 @@ interface CustomizationPanelProps {
   initialPalette?: string;
   initialSkinTone?: string;
   initialFlags?: { mustache?: boolean; lipstick?: boolean; glasses?: boolean };
-  onSave?: (data: { gender: Gender; palette: string; skinTone: string }) => void;
+  onSave?: (data: { gender: Gender; palette: string; skinTone: string; flags: { mustache?: boolean; lipstick?: boolean; glasses?: boolean } }) => void;
   onClose?: () => void;
 }
 
@@ -148,7 +148,7 @@ export default function CustomizationPanel({
             </button>
             <button
               onClick={async () => {
-                onSave?.({ gender, palette: paletteName, skinTone });
+                onSave?.({ gender, palette: paletteName, skinTone, flags });
                 // Try on-chain save if IDL supports it
                 if (!publicKey || !wallet) return;
                 try {
