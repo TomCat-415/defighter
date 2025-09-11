@@ -448,7 +448,15 @@ export default function ProfilePage() {
             <div className="space-y-3">
               <h4 className="font-semibold">Abilities</h4>
               {player.abilities.map((level, index) => {
-                const abilityName = ['Meme Bomb', 'Ship It', 'Series A Cannon'][index];
+                // Get class-specific move names
+                const MOVE_NAMES_BY_CLASS = {
+                  shitposter: ["MemeBomb", "RugPullRumor"],
+                  builder: ["ShipIt", "TestnetDeploy"], 
+                  vc: ["SeriesACannon", "ExitLiquidity"]
+                };
+                
+                const classMoves = MOVE_NAMES_BY_CLASS[fighterClassName as keyof typeof MOVE_NAMES_BY_CLASS] || ["Unknown", "Unknown"];
+                const abilityName = classMoves[index] || `Move ${index + 1}`;
                 const cost = config ? calculateUpgradeCost(level, config.upgrade_c0, config.upgrade_p_bps) : 0;
                 const canUpgrade = level < (config?.max_level || 100) && player.xp >= cost;
                 const isMaxLevel = level >= (config?.max_level || 100);
