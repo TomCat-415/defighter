@@ -447,7 +447,7 @@ export default function ProfilePage() {
             {/* Abilities */}
             <div className="space-y-3">
               <h4 className="font-semibold">Abilities</h4>
-              {player.abilities.map((level, index) => {
+              {player.abilities.slice(0, 2).map((level, index) => {
                 // Get class-specific move names
                 const MOVE_NAMES_BY_CLASS = {
                   shitposter: ["MemeBomb", "RugPullRumor"],
