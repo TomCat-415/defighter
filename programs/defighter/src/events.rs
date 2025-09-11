@@ -27,8 +27,10 @@ pub struct MoveRevealed {
 pub struct BattleResolved {
     pub battle: Pubkey,
     pub winner: Pubkey,
-    pub challenger_score: i32,
-    pub opponent_score: i32,
+    pub challenger_hp: u16,
+    pub opponent_hp: u16,
+    pub challenger_damage: u16,
+    pub opponent_damage: u16,
 }
 
 #[event]

@@ -1,0 +1,1157 @@
+{
+  "address": "HGkRbNawHR3PbA2h1LgqtMNCj6jcrS14c86wDUvS3dTL",
+  "metadata": {
+    "name": "defighter",
+    "version": "0.1.0",
+    "spec": "0.1.0"
+  },
+  "instructions": [
+    {
+      "name": "admin_update_config",
+      "discriminator": [
+        224,
+        243,
+        100,
+        135,
+        120,
+        165,
+        43,
+        244
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_config",
+          "type": {
+            "defined": {
+              "name": "BalanceConfig"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "commit_move",
+      "discriminator": [
+        27,
+        16,
+        69,
+        212,
+        175,
+        110,
+        123,
+        189
+      ],
+      "accounts": [
+        {
+          "name": "battle",
+          "writable": true
+        },
+        {
+          "name": "player",
+          "signer": true
+        },
+        {
+          "name": "clock",
+          "address": "SysvarC1ock11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "commitment",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_player",
+      "discriminator": [
+        19,
+        178,
+        189,
+        216,
+        159,
+        134,
+        0,
+        192
+      ],
+      "accounts": [
+        {
+          "name": "player",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "class",
+          "type": {
+            "defined": {
+              "name": "FighterClass"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "init_config",
+      "discriminator": [
+        23,
+        235,
+        115,
+        232,
+        168,
+        96,
+        1,
+        231
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "base",
+          "type": "i32"
+        },
+        {
+          "name": "linear_a",
+          "type": "i32"
+        },
+        {
+          "name": "dim_k",
+          "type": "i32"
+        },
+        {
+          "name": "dim_t",
+          "type": "i32"
+        },
+        {
+          "name": "max_level",
+          "type": "u16"
+        },
+        {
+          "name": "tie_break_rand",
+          "type": "bool"
+        },
+        {
+          "name": "use_dim_bonus",
+          "type": "bool"
+        },
+        {
+          "name": "xp_base",
+          "type": "u64"
+        },
+        {
+          "name": "xp_tie_bps",
+          "type": "u16"
+        },
+        {
+          "name": "xp_loser_bps",
+          "type": "u16"
+        },
+        {
+          "name": "upgrade_c0",
+          "type": "u64"
+        },
+        {
+          "name": "upgrade_p_bps",
+          "type": "u16"
+        },
+        {
+          "name": "rps_win_base",
+          "type": "i32"
+        },
+        {
+          "name": "rps_tie_base",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "initiate_battle",
+      "discriminator": [
+        248,
+        205,
+        226,
+        209,
+        41,
+        28,
+        54,
+        75
+      ],
+      "accounts": [
+        {
+          "name": "battle",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  116,
+                  116,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "challenger"
+              },
+              {
+                "kind": "arg",
+                "path": "opponent"
+              },
+              {
+                "kind": "arg",
+                "path": "nonce"
+              }
+            ]
+          }
+        },
+        {
+          "name": "challenger",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "clock",
+          "address": "SysvarC1ock11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "opponent",
+          "type": "pubkey"
+        },
+        {
+          "name": "nonce",
+          "type": "u64"
+        },
+        {
+          "name": "commit_deadline_slots",
+          "type": "u64"
+        },
+        {
+          "name": "reveal_deadline_slots",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "resolve_battle",
+      "discriminator": [
+        112,
+        191,
+        142,
+        62,
+        126,
+        119,
+        170,
+        54
+      ],
+      "accounts": [
+        {
+          "name": "battle",
+          "writable": true
+        },
+        {
+          "name": "player_challenger",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "battle.challenger",
+                "account": "Battle"
+              }
+            ]
+          }
+        },
+        {
+          "name": "player_opponent",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "battle.opponent",
+                "account": "Battle"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "clock",
+          "address": "SysvarC1ock11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "reveal_move",
+      "discriminator": [
+        30,
+        133,
+        198,
+        26,
+        106,
+        44,
+        55,
+        149
+      ],
+      "accounts": [
+        {
+          "name": "battle",
+          "writable": true
+        },
+        {
+          "name": "player",
+          "signer": true
+        },
+        {
+          "name": "player_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "player"
+              }
+            ]
+          }
+        },
+        {
+          "name": "clock",
+          "address": "SysvarC1ock11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "move_choice",
+          "type": {
+            "defined": {
+              "name": "MoveChoice"
+            }
+          }
+        },
+        {
+          "name": "salt",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "upgrade_ability",
+      "discriminator": [
+        52,
+        72,
+        69,
+        210,
+        102,
+        128,
+        130,
+        170
+      ],
+      "accounts": [
+        {
+          "name": "player",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  121,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "player"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "ability_index",
+          "type": "u8"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "BalanceConfig",
+      "discriminator": [
+        136,
+        224,
+        146,
+        63,
+        217,
+        120,
+        138,
+        131
+      ]
+    },
+    {
+      "name": "Battle",
+      "discriminator": [
+        81,
+        148,
+        121,
+        71,
+        63,
+        166,
+        116,
+        24
+      ]
+    },
+    {
+      "name": "Player",
+      "discriminator": [
+        205,
+        222,
+        112,
+        7,
+        165,
+        155,
+        206,
+        218
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "AbilityUpgraded",
+      "discriminator": [
+        34,
+        32,
+        163,
+        18,
+        255,
+        105,
+        16,
+        106
+      ]
+    },
+    {
+      "name": "BattleInitiated",
+      "discriminator": [
+        143,
+        241,
+        154,
+        163,
+        133,
+        237,
+        42,
+        247
+      ]
+    },
+    {
+      "name": "BattleResolved",
+      "discriminator": [
+        47,
+        156,
+        226,
+        94,
+        163,
+        176,
+        162,
+        241
+      ]
+    },
+    {
+      "name": "MoveCommitted",
+      "discriminator": [
+        236,
+        104,
+        12,
+        242,
+        153,
+        135,
+        13,
+        77
+      ]
+    },
+    {
+      "name": "MoveRevealed",
+      "discriminator": [
+        29,
+        51,
+        92,
+        150,
+        197,
+        49,
+        35,
+        89
+      ]
+    },
+    {
+      "name": "XpAwarded",
+      "discriminator": [
+        166,
+        104,
+        173,
+        241,
+        191,
+        126,
+        144,
+        63
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NotEnoughXP",
+      "msg": "Not enough XP to upgrade"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidAbility",
+      "msg": "Invalid ability index"
+    },
+    {
+      "code": 6002,
+      "name": "NotInBattle",
+      "msg": "Player not in this battle"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidReveal",
+      "msg": "Reveal does not match commitment"
+    },
+    {
+      "code": 6004,
+      "name": "AlreadyCommitted",
+      "msg": "Already committed"
+    },
+    {
+      "code": 6005,
+      "name": "AlreadyRevealed",
+      "msg": "Already revealed"
+    },
+    {
+      "code": 6006,
+      "name": "DeadlinePassed",
+      "msg": "Commit deadline passed"
+    },
+    {
+      "code": 6007,
+      "name": "RevealDeadlinePassed",
+      "msg": "Reveal deadline passed"
+    },
+    {
+      "code": 6008,
+      "name": "NotReadyToResolve",
+      "msg": "Too early to resolve"
+    },
+    {
+      "code": 6009,
+      "name": "AlreadyResolved",
+      "msg": "Battle already resolved"
+    },
+    {
+      "code": 6010,
+      "name": "NotConfigured",
+      "msg": "Config not found"
+    },
+    {
+      "code": 6011,
+      "name": "MaxLevel",
+      "msg": "Ability exceeds max level"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidClassMove",
+      "msg": "Move does not match player class"
+    }
+  ],
+  "types": [
+    {
+      "name": "AbilityUpgraded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "ability_index",
+            "type": "u8"
+          },
+          {
+            "name": "new_level",
+            "type": "u16"
+          },
+          {
+            "name": "cost",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BalanceConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "base",
+            "type": "i32"
+          },
+          {
+            "name": "linear_a",
+            "type": "i32"
+          },
+          {
+            "name": "dim_k",
+            "type": "i32"
+          },
+          {
+            "name": "dim_t",
+            "type": "i32"
+          },
+          {
+            "name": "max_level",
+            "type": "u16"
+          },
+          {
+            "name": "tie_break_rand",
+            "type": "bool"
+          },
+          {
+            "name": "use_dim_bonus",
+            "type": "bool"
+          },
+          {
+            "name": "xp_base",
+            "type": "u64"
+          },
+          {
+            "name": "xp_tie_bps",
+            "type": "u16"
+          },
+          {
+            "name": "xp_loser_bps",
+            "type": "u16"
+          },
+          {
+            "name": "upgrade_c0",
+            "type": "u64"
+          },
+          {
+            "name": "upgrade_p_bps",
+            "type": "u16"
+          },
+          {
+            "name": "rps_win_base",
+            "type": "i32"
+          },
+          {
+            "name": "rps_tie_base",
+            "type": "i32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Battle",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "challenger",
+            "type": "pubkey"
+          },
+          {
+            "name": "opponent",
+            "type": "pubkey"
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "BattleState"
+              }
+            }
+          },
+          {
+            "name": "created_slot",
+            "type": "u64"
+          },
+          {
+            "name": "commit_deadline_slot",
+            "type": "u64"
+          },
+          {
+            "name": "reveal_deadline_slot",
+            "type": "u64"
+          },
+          {
+            "name": "commit_challenger",
+            "type": {
+              "option": {
+                "array": [
+                  "u8",
+                  32
+                ]
+              }
+            }
+          },
+          {
+            "name": "commit_opponent",
+            "type": {
+              "option": {
+                "array": [
+                  "u8",
+                  32
+                ]
+              }
+            }
+          },
+          {
+            "name": "reveal_challenger",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "MoveChoice"
+                }
+              }
+            }
+          },
+          {
+            "name": "reveal_opponent",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "MoveChoice"
+                }
+              }
+            }
+          },
+          {
+            "name": "winner",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "challenger_hp",
+            "type": "u16"
+          },
+          {
+            "name": "opponent_hp",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BattleInitiated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "battle",
+            "type": "pubkey"
+          },
+          {
+            "name": "challenger",
+            "type": "pubkey"
+          },
+          {
+            "name": "opponent",
+            "type": "pubkey"
+          },
+          {
+            "name": "commit_deadline_slot",
+            "type": "u64"
+          },
+          {
+            "name": "reveal_deadline_slot",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BattleResolved",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "battle",
+            "type": "pubkey"
+          },
+          {
+            "name": "winner",
+            "type": "pubkey"
+          },
+          {
+            "name": "challenger_hp",
+            "type": "u16"
+          },
+          {
+            "name": "opponent_hp",
+            "type": "u16"
+          },
+          {
+            "name": "challenger_damage",
+            "type": "u16"
+          },
+          {
+            "name": "opponent_damage",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BattleState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "WaitingForCommits"
+          },
+          {
+            "name": "WaitingForReveals"
+          },
+          {
+            "name": "Resolved"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FighterClass",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Shitposter"
+          },
+          {
+            "name": "Builder"
+          },
+          {
+            "name": "VC"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MoveChoice",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "MemeBomb"
+          },
+          {
+            "name": "RugPullRumor"
+          },
+          {
+            "name": "ShipIt"
+          },
+          {
+            "name": "TestnetDeploy"
+          },
+          {
+            "name": "SeriesACannon"
+          },
+          {
+            "name": "ExitLiquidity"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MoveCommitted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "battle",
+            "type": "pubkey"
+          },
+          {
+            "name": "player",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MoveRevealed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "battle",
+            "type": "pubkey"
+          },
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "move_choice",
+            "type": {
+              "defined": {
+                "name": "MoveChoice"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Player",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "class",
+            "type": {
+              "defined": {
+                "name": "FighterClass"
+              }
+            }
+          },
+          {
+            "name": "xp",
+            "type": "u64"
+          },
+          {
+            "name": "abilities",
+            "type": {
+              "array": [
+                "u16",
+                3
+              ]
+            }
+          },
+          {
+            "name": "elo",
+            "type": "i32"
+          },
+          {
+            "name": "version",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "XpAwarded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "player",
+            "type": "pubkey"
+          },
+          {
+            "name": "delta",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ]
+}

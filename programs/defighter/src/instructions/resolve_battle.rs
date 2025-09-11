@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use crate::state::{battle::{Battle, BattleState}, player::{Player, FighterClass}};
 use crate::state::config::BalanceConfig;
 use crate::errors::CustomError;
-use crate::logic::{compute_scores};
+use crate::logic::{calculate_battle_outcome, tie_break_entropy};
 
 #[derive(Accounts)]
 pub struct ResolveBattle<'info> {
@@ -30,33 +30,89 @@ pub fn handler(ctx: Context<ResolveBattle>) -> Result<()> {
     let cfg = &ctx.accounts.config;
 
     if both_revealed {
-        // Compute scores
+        // Get moves and calculate battle outcomes
         let c_move = battle.reveal_challenger.unwrap();
         let o_move = battle.reveal_opponent.unwrap();
-        let (scores, _rps) = compute_scores(
-            c_move.class(),
-            o_move.class(),
-            level_for_class(&ctx.accounts.player_challenger, c_move.class()),
-            level_for_class(&ctx.accounts.player_opponent, o_move.class()),
-            cfg,
+        
+        // Get VRF for each move
+        let c_vrf = tie_break_entropy(
+            c_move as u8,
+            o_move as u8,
+            &[0u8; 32], // TODO: Use actual commitment salt when available
+            &[0u8; 32], // TODO: Use actual commitment salt when available
+            &battle.key(),
         );
-        if scores.challenger > scores.opponent { winner = Some(battle.challenger); }
-        else if scores.opponent > scores.challenger { winner = Some(battle.opponent); }
-        else {
-            // tie: choose based on cfg or default challenger
+        let o_vrf = tie_break_entropy(
+            o_move as u8,
+            c_move as u8,
+            &[0u8; 32], // TODO: Use actual commitment salt when available
+            &[0u8; 32], // TODO: Use actual commitment salt when available
+            &battle.key(),
+        );
+        
+        // Calculate damage for each player's move
+        let challenger_outcome = calculate_battle_outcome(
+            c_move,
+            &ctx.accounts.player_challenger,
+            ctx.accounts.player_opponent.class,
+            battle.opponent_hp,
+            c_vrf,
+        );
+        
+        let opponent_outcome = calculate_battle_outcome(
+            o_move,
+            &ctx.accounts.player_opponent,
+            ctx.accounts.player_challenger.class,
+            battle.challenger_hp,
+            o_vrf,
+        );
+        
+        // Apply damage
+        battle.challenger_hp = opponent_outcome.remaining_hp;
+        battle.opponent_hp = challenger_outcome.remaining_hp;
+        
+        // Determine winner based on remaining HP
+        if battle.challenger_hp == 0 && battle.opponent_hp == 0 {
+            // Both died - tie break using VRF
             if cfg.tie_break_rand {
-                // fallback tie-break: challenger wins if slot is even else opponent
-                winner = Some(if ctx.accounts.clock.slot % 2 == 0 { battle.challenger } else { battle.opponent });
+                winner = Some(if c_vrf % 2 == 0 { battle.challenger } else { battle.opponent });
             } else {
                 winner = Some(battle.challenger);
+            }
+        } else if battle.challenger_hp == 0 {
+            winner = Some(battle.opponent);
+        } else if battle.opponent_hp == 0 {
+            winner = Some(battle.challenger);
+        } else {
+            // Neither died - higher HP wins, or higher damage dealt as tiebreaker
+            if battle.challenger_hp > battle.opponent_hp {
+                winner = Some(battle.challenger);
+            } else if battle.opponent_hp > battle.challenger_hp {
+                winner = Some(battle.opponent);
+            } else {
+                // Same HP remaining - higher damage dealt wins
+                if challenger_outcome.damage_dealt > opponent_outcome.damage_dealt {
+                    winner = Some(battle.challenger);
+                } else if opponent_outcome.damage_dealt > challenger_outcome.damage_dealt {
+                    winner = Some(battle.opponent);
+                } else {
+                    // True tie - use VRF
+                    if cfg.tie_break_rand {
+                        winner = Some(if c_vrf % 2 == 0 { battle.challenger } else { battle.opponent });
+                    } else {
+                        winner = Some(battle.challenger);
+                    }
+                }
             }
         }
 
         emit!(crate::events::BattleResolved {
             battle: battle.key(),
             winner: winner.unwrap(),
-            challenger_score: scores.challenger,
-            opponent_score: scores.opponent,
+            challenger_hp: battle.challenger_hp,
+            opponent_hp: battle.opponent_hp,
+            challenger_damage: challenger_outcome.damage_dealt,
+            opponent_damage: opponent_outcome.damage_dealt,
         });
 
         award_xp(&mut ctx.accounts.player_challenger, &mut ctx.accounts.player_opponent, winner.unwrap(), cfg);
@@ -74,7 +130,14 @@ pub fn handler(ctx: Context<ResolveBattle>) -> Result<()> {
             // no participation: challenger wins by default to allow closure
             winner = Some(battle.challenger);
         }
-        emit!(crate::events::BattleResolved { battle: battle.key(), winner: winner.unwrap(), challenger_score: 0, opponent_score: 0 });
+        emit!(crate::events::BattleResolved { 
+            battle: battle.key(), 
+            winner: winner.unwrap(), 
+            challenger_hp: battle.challenger_hp,
+            opponent_hp: battle.opponent_hp,
+            challenger_damage: 0,
+            opponent_damage: 0,
+        });
         award_xp(&mut ctx.accounts.player_challenger, &mut ctx.accounts.player_opponent, winner.unwrap(), cfg);
     }
 

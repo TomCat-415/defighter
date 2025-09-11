@@ -9,7 +9,7 @@ pub struct InitiateBattle<'info> {
         payer = challenger,
         seeds = [b"battle", challenger.key().as_ref(), opponent.as_ref(), &nonce.to_le_bytes()],
         bump,
-        space = 8 + 32 + 32 + 8 + 1 + 8 + 8 + 8 + (1+32) + (1+32) + (1+1) + (1+1) + (1+32)
+        space = 8 + 32 + 32 + 8 + 1 + 8 + 8 + 8 + (1+32) + (1+32) + (1+1) + (1+1) + (1+32) + 2 + 2
     )]
     pub battle: Account<'info, Battle>,
     #[account(mut)]
@@ -41,6 +41,8 @@ pub fn handler(
     battle.reveal_challenger = None;
     battle.reveal_opponent = None;
     battle.winner = None;
+    battle.challenger_hp = 200;
+    battle.opponent_hp = 200;
 
     emit!(crate::events::BattleInitiated {
         battle: battle.key(),

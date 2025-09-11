@@ -15,6 +15,8 @@ pub struct Battle {
     pub reveal_challenger: Option<MoveChoice>,
     pub reveal_opponent: Option<MoveChoice>,
     pub winner: Option<Pubkey>,
+    pub challenger_hp: u16,
+    pub opponent_hp: u16,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
