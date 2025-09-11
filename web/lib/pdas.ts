@@ -20,6 +20,13 @@ export function configPda(): [PublicKey, number] {
   return PublicKey.findProgramAddressSync([Buffer.from("config")], getProgramId());
 }
 
+export function customizationPda(player: PublicKey): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("character_custom"), player.toBuffer()],
+    getProgramId()
+  );
+}
+
 export function toLeBytes8(n: BN): Buffer {
   const b = Buffer.alloc(8);
   b.writeBigUInt64LE(BigInt(n.toString()));

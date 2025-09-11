@@ -15,6 +15,10 @@ import {
 } from "@/lib/profile-utils";
 import { showSuccessToast, showErrorToast, showInfoToast } from "@/lib/toast";
 import dynamic from "next/dynamic";
+import AvatarPreview from "@/components/character/AvatarPreview";
+import CharacterPreview from "@/components/character/CharacterPreview";
+import { customizationPda } from "@/lib/pdas";
+import { saveCustomizationDraft, loadCustomizationDraft } from "@/lib/customization";
 
 const CustomizationPanel = dynamic(() => import("@/components/character/CustomizationPanel"), { ssr: false });
 
@@ -58,12 +62,22 @@ export default function ProfilePage() {
   // Debug mode for testing create flow
   const [debugMode, setDebugMode] = useState<boolean>(false);
   const [showCustomization, setShowCustomization] = useState<boolean>(false);
+  const [customizationExists, setCustomizationExists] = useState<boolean>(false);
+  const [customizationDraft, setCustomizationDraft] = useState<any | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setRpcUrl(process.env.NEXT_PUBLIC_RPC_URL || 'Unknown');
     }
   }, []);
+
+  // Load any saved local draft for visuals
+  useEffect(() => {
+    if (publicKey) {
+      const d = loadCustomizationDraft(publicKey);
+      if (d) setCustomizationDraft(d);
+    }
+  }, [publicKey]);
 
   const program = publicKey && wallet ? getProgram(connection, wallet.adapter as any) : null;
   const [playerPdaAddr] = publicKey ? playerPda(publicKey) : [null];
@@ -117,6 +131,13 @@ export default function ProfilePage() {
             xp: playerData.xp?.toNumber ? playerData.xp.toNumber() : playerData.xp,
             elo: 0 // Skip ELO for now
           });
+
+          // Check for customization PDA presence (scaffolding; decode later)
+          try {
+            const [custPda] = customizationPda(playerPdaAddr);
+            const info = await connection.getAccountInfo(custPda);
+            setCustomizationExists(!!info);
+          } catch {}
         } else {
           setPlayer(null);
         }
@@ -437,6 +458,31 @@ export default function ProfilePage() {
               )}
             </div>
             
+            {/* Character Visuals (avatar + battle body) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="rounded-lg bg-slate-700/50 p-4">
+                <div className="text-sm font-semibold mb-2">Avatar</div>
+                <div className="flex items-center justify-center">
+                  {/* Placeholder visuals until on-chain decode; use draft if available */}
+                  <AvatarPreview
+                    gender={(customizationDraft?.genderName || 'male') as any}
+                    primaryColor="#00D4FF"
+                    skinTone="#C89478"
+                    flags={{ mustache: false, lipstick: false, glasses: true }}
+                  />
+                </div>
+                {!customizationExists && (
+                  <div className="text-xs opacity-70 mt-2">No on-chain customization yet</div>
+                )}
+              </div>
+              <div className="rounded-lg bg-slate-700/50 p-4">
+                <div className="text-sm font-semibold mb-2">Battle Sprite</div>
+                <div className="flex items-center justify-center">
+                  <CharacterPreview gender={(customizationDraft?.genderName || 'male') as any} primaryColor="#00D4FF" skinTone="#C89478" />
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
                 <div className="text-sm opacity-70">Experience Points</div>
@@ -543,6 +589,17 @@ export default function ProfilePage() {
       {showCustomization && (
         <CustomizationPanel
           onSave={(data) => {
+            // Persist UI draft for visuals until on-chain is wired
+            if (publicKey) {
+              const draft = {
+                genderName: data.gender as any,
+                paletteName: data.palette,
+                skinToneHex: data.skinTone,
+                flags: {},
+              };
+              saveCustomizationDraft(publicKey, draft as any);
+              setCustomizationDraft(draft);
+            }
             showSuccessToast('Saved', `Gender: ${data.gender}, Palette: ${data.palette}`);
             setShowCustomization(false);
           }}

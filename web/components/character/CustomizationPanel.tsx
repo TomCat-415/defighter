@@ -5,6 +5,7 @@ import AvatarPreview from "@/components/character/AvatarPreview";
 import GenderSelector from "@/components/character/GenderSelector";
 import PalettePicker from "@/components/character/PalettePicker";
 import { CRYPTO_PALETTES, SKIN_TONES } from "@/components/character/constants";
+import { saveCustomizationDraft } from "@/lib/customization";
 
 type Gender = "male" | "female" | "nonbinary";
 

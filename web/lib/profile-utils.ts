@@ -85,3 +85,30 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     return success;
   }
 }
+
+export interface CustomizationDraftV1 {
+  gender: number;
+  paletteIndex: number;
+  skinToneIndex: number;
+  hairStyleIndex: number;
+  hairColorIndex: number;
+  outfitStyleIndex: number;
+  outfitColorIndex: number;
+  faceFlags: number; // u16 bitfield
+  accessory0: number; // headwear (255 none)
+  accessory1: number; // weapon (255 none)
+}
+
+export function toOnChainCustomization(data: CustomizationDraftV1) {
+  return {
+    gender: data.gender,
+    paletteIndex: data.paletteIndex,
+    skinToneIndex: data.skinToneIndex,
+    hairStyleIndex: data.hairStyleIndex,
+    hairColorIndex: data.hairColorIndex,
+    outfitStyleIndex: data.outfitStyleIndex,
+    outfitColorIndex: data.outfitColorIndex,
+    faceFlags: data.faceFlags,
+    accessorySlots: [data.accessory0, data.accessory1],
+  } as any;
+}
