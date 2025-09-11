@@ -523,6 +523,16 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
+
+            {/* Customize Character CTA */}
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => showInfoToast('Customization', 'Character customization coming soon')}
+                className="bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-lg"
+              >
+                Customize Character
+              </button>
+            </div>
           </div>
         </div>
       )}
