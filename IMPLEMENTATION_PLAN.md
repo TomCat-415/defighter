@@ -18,36 +18,67 @@ Your codebase has:
 Based on Solana expert consultation, 2 moves per class provides optimal balance of strategy vs complexity.
 
 **Shitposter Moves:**
-- `MemeBomb` (Basic) - Reliable meme warfare attack
-- `RugPullRumor` (Special) - High damage vs VC when player health >50%
+- `MemeBomb` (Basic) - Reliable meme warfare attack (100% hit rate)
+- `RugPullRumor` (Special) - Risky but powerful rumor spread (30% miss, 50% hit 1.5x, 20% crit 2.2x)
 
 **Builder Moves:** 
-- `ShipIt` (Basic) - Consistent shipping velocity attack
-- `TestnetDeploy` (Special) - High damage vs Shitposter when total ability levels >3
+- `ShipIt` (Basic) - Consistent shipping velocity attack (100% hit rate)
+- `TestnetDeploy` (Special) - High-risk deployment gamble (25% miss, 55% hit 1.6x, 20% crit 2.3x)
 
 **VC Moves:**
-- `SeriesACannon` (Basic) - Standard funding pressure attack
-- `ExitLiquidity` (Special) - High damage vs Builder when ELO >1000
+- `SeriesACannon` (Basic) - Standard funding pressure attack (100% hit rate)
+- `ExitLiquidity` (Special) - Market manipulation move (35% miss, 45% hit 1.4x, 20% crit 2.0x)
 
 #### **Rock-Paper-Scissors Balance:**
 - **Shitposter** > **VC** (memes destroy reputations)
 - **VC** > **Builder** (funding controls roadmaps)  
 - **Builder** > **Shitposter** (shipping beats hype)
 
-#### **Technical Changes:**
+#### **New Battle System: Risk vs Reward**
+
+**Core Concept:**
+- **Basic Moves**: 100% hit rate, predictable damage
+- **Special Moves**: Variable outcomes, higher damage potential  
+- **200 HP per player**: Battles last 1-2 rounds, allowing strategy adaptation
+
+**Damage Calculation Framework:**
+```
+Final Damage = Base Damage × Class Advantage × Player Power × Move Outcome
+```
+
+**Class Advantage (Rock-Paper-Scissors):**
+- **Winning matchup**: 1.25x damage (25% bonus)
+- **Neutral matchup**: 1.0x damage
+- **Losing matchup**: 0.80x damage (20% penalty)
+
+**Player Power Progression:**
 ```rust
-// Update MoveChoice enum in player.rs
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
-pub enum MoveChoice {
-    // Shitposter moves
-    MemeBomb = 0,      // Basic
-    RugPullRumor = 1,  // Special
-    // Builder moves
-    ShipIt = 2,        // Basic  
-    TestnetDeploy = 3, // Special
-    // VC moves
-    SeriesACannon = 4, // Basic
-    ExitLiquidity = 5, // Special
+Player Power = 1.0 + (Total Ability Levels × 0.05) + floor(XP / 1000) × 0.02
+```
+
+**Special Move Outcomes (determined by VRF):**
+- **RugPullRumor**: 30% miss, 50% standard (1.5x), 20% critical (2.2x)  
+- **TestnetDeploy**: 25% miss, 55% standard (1.6x), 20% critical (2.3x)
+- **ExitLiquidity**: 35% miss, 45% standard (1.4x), 20% critical (2.0x)
+
+**Strategic Decision Making:**
+- **Basic moves** when you have class advantage or want reliability
+- **Special moves** when you have class disadvantage or need big damage
+- **Comeback potential** through risky special moves with high payoff
+
+#### **Technical Implementation:**
+```rust
+pub struct BattleOutcome {
+    pub damage_dealt: u16,
+    pub move_result: MoveResult,
+    pub final_hp: u16,
+}
+
+pub enum MoveResult {
+    BasicHit,
+    SpecialMiss,
+    SpecialHit,
+    SpecialCritical,
 }
 
 impl MoveChoice {
@@ -55,21 +86,11 @@ impl MoveChoice {
         matches!(self, MoveChoice::RugPullRumor | MoveChoice::TestnetDeploy | MoveChoice::ExitLiquidity)
     }
     
-    pub fn get_special_condition(self, player: &Player) -> bool {
-        match self {
-            MoveChoice::RugPullRumor => player.calculate_health_percentage() > 50,
-            MoveChoice::TestnetDeploy => player.total_ability_levels() > 3,
-            MoveChoice::ExitLiquidity => player.elo > 1000,
-            _ => true, // Basic moves always available
-        }
+    pub fn calculate_damage(self, attacker: &Player, defender_class: FighterClass, vrf_result: u64) -> BattleOutcome {
+        // Implement the battle math framework above
     }
 }
 ```
-
-#### **Battle Resolution Updates:**
-- Add special move damage multipliers (e.g., 1.5x damage when conditions met)
-- Update battle logic in `resolve_battle.rs`
-- Maintain single-turn system for low cost and complexity
 
 ---
 

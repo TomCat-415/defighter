@@ -448,7 +448,7 @@ export default function ProfilePage() {
             <div className="space-y-3">
               <h4 className="font-semibold">Abilities</h4>
               {player.abilities.map((level, index) => {
-                const abilityName = ['Shitpost', 'Build', 'VC Network'][index];
+                const abilityName = ['Meme Bomb', 'Ship It', 'Series A Cannon'][index];
                 const cost = config ? calculateUpgradeCost(level, config.upgrade_c0, config.upgrade_p_bps) : 0;
                 const canUpgrade = level < (config?.max_level || 100) && player.xp >= cost;
                 const isMaxLevel = level >= (config?.max_level || 100);
