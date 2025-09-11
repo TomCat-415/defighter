@@ -391,15 +391,21 @@ export default function BattlePage() {
 
         let winnerName = "<none>";
         if (winnerPk) {
-          if ((winnerPk as PublicKey).equals(me)) winnerName = "A (You)";
-          else if ((winnerPk as PublicKey).equals(bot.publicKey)) winnerName = "B (Bot)";
+          if ((winnerPk as PublicKey).equals(me)) winnerName = "A (You - Shitposter)";
+          else if ((winnerPk as PublicKey).equals(bot.publicKey)) winnerName = "B (Bot - Builder)";
           else winnerName = `Unknown (${(winnerPk as PublicKey).toBase58()})`;
         }
 
+        // Display new HP-based battle results
+        const challengerHP = bAcc.challengerHp || 0;
+        const opponentHP = bAcc.opponentHp || 0;
+        
         setLog((l) => [
-          `Winner: ${winnerName}`,
-          `XP A: ${xpA0.toString()} -> ${xpA1.toString()} (Δ ${dA.toString()})`,
-          `XP B: ${xpB0.toString()} -> ${xpB1.toString()} (Δ ${dB.toString()})`,
+          `🏆 Winner: ${winnerName}`,
+          `💀 Final HP - A: ${challengerHP}/200 | B: ${opponentHP}/200`,
+          `⚔️ Moves: A used MemeBomb vs B used ShipIt`,
+          `📊 XP - A: ${xpA0.toString()} → ${xpA1.toString()} (+${dA.toString()}) | B: ${xpB0.toString()} → ${xpB1.toString()} (+${dB.toString()})`,
+          `✨ NEW BATTLE SYSTEM: HP-based with simultaneous move resolution!`,
           ...l,
         ]);
       } catch {}
