@@ -8,6 +8,8 @@ export const CRYPTO_PALETTES: Record<string, string[]> = {
   "Phantom Purple": ["#AB9FF2", "#8A7FE8", "#6959DE"],
 };
 
+export const PALETTE_NAMES: string[] = Object.keys(CRYPTO_PALETTES);
+
 export const SKIN_TONES = [
   "#F1D3C2",
   "#E2B7A2",
