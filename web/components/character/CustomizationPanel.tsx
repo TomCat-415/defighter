@@ -1,6 +1,10 @@
 "use client";
 import { useState } from "react";
 import CharacterPreview from "@/components/character/CharacterPreview";
+import AvatarPreview from "@/components/character/AvatarPreview";
+import GenderSelector from "@/components/character/GenderSelector";
+import PalettePicker from "@/components/character/PalettePicker";
+import { CRYPTO_PALETTES, SKIN_TONES } from "@/components/character/constants";
 
 type Gender = "male" | "female" | "nonbinary";
 
@@ -8,39 +12,29 @@ interface CustomizationPanelProps {
   initialGender?: Gender;
   initialPalette?: string;
   initialSkinTone?: string;
+  initialFlags?: { mustache?: boolean; lipstick?: boolean; glasses?: boolean };
   onSave?: (data: { gender: Gender; palette: string; skinTone: string }) => void;
   onClose?: () => void;
 }
 
-const CRYPTO_PALETTES: Record<string, string[]> = {
-  "DeFi Blue": ["#00D4FF", "#0099CC", "#006699"],
-  "Meme Green": ["#00FF88", "#00CC66", "#009944"],
-  "Bull Gold": ["#FFD700", "#FFAA00", "#CC8800"],
-  "Bear Red": ["#FF4444", "#CC2222", "#990000"],
-  "Phantom Purple": ["#AB9FF2", "#8A7FE8", "#6959DE"],
-};
-
-const SKIN_TONES = [
-  "#F1D3C2",
-  "#E2B7A2",
-  "#C89478",
-  "#A96F4E",
-  "#7D4E34",
-  "#5C3A2A",
-  "#3E2921",
-  "#2A1D18",
-];
+// Palettes and tones now imported from constants
 
 export default function CustomizationPanel({
   initialGender = "male",
   initialPalette = "DeFi Blue",
   initialSkinTone = SKIN_TONES[2],
+  initialFlags,
   onSave,
   onClose,
 }: CustomizationPanelProps) {
   const [gender, setGender] = useState<Gender>(initialGender);
   const [paletteName, setPaletteName] = useState<string>(initialPalette);
   const [skinTone, setSkinTone] = useState<string>(initialSkinTone);
+  const [flags, setFlags] = useState({
+    mustache: initialFlags?.mustache ?? (initialGender === "nonbinary" ? true : false),
+    lipstick: initialFlags?.lipstick ?? (initialGender === "nonbinary" ? true : false),
+    glasses: initialFlags?.glasses ?? false,
+  });
 
   const primaryColor = CRYPTO_PALETTES[paletteName]?.[0] || "#00D4FF";
 
@@ -53,11 +47,12 @@ export default function CustomizationPanel({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-          {/* Left: Preview */}
+          {/* Left: Previews */}
           <div className="p-6 flex items-center justify-center">
-            <div>
+            <div className="space-y-6">
+              <AvatarPreview gender={gender} primaryColor={primaryColor} skinTone={skinTone} flags={flags} />
               <CharacterPreview gender={gender} primaryColor={primaryColor} skinTone={skinTone} />
-              <div className="mt-4 text-sm opacity-80 text-center">
+              <div className="text-sm opacity-80 text-center">
                 <div>{gender.toUpperCase()} • {paletteName} • Skin {SKIN_TONES.indexOf(skinTone) + 1}</div>
               </div>
             </div>
@@ -68,67 +63,42 @@ export default function CustomizationPanel({
             {/* Gender */}
             <div>
               <div className="text-sm font-semibold mb-2">Gender</div>
+              <GenderSelector value={gender} onChange={setGender} />
+            </div>
+
+            {/* Palettes & Skin Tones */}
+            <PalettePicker
+              paletteName={paletteName}
+              onPaletteChange={setPaletteName}
+              skinTone={skinTone}
+              onSkinToneChange={setSkinTone}
+            />
+
+            {/* Face Flags */}
+            <div>
+              <div className="text-sm font-semibold mb-2">Face Features</div>
               <div className="grid grid-cols-3 gap-2">
-                {(["male", "female", "nonbinary"] as Gender[]).map((g) => (
-                  <button
-                    key={g}
-                    onClick={() => setGender(g)}
-                    className={`px-3 py-2 rounded border text-sm ${
-                      gender === g
-                        ? "border-pink-500 bg-pink-500/20"
-                        : "border-slate-600 hover:border-slate-500"
-                    }`}
-                    aria-pressed={gender === g}
-                  >
-                    {g === "male" ? "Male" : g === "female" ? "Female" : "Non-binary"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Palette */}
-            <div>
-              <div className="text-sm font-semibold mb-2">Color Palette</div>
-              <div className="space-y-2">
-                {Object.entries(CRYPTO_PALETTES).map(([name, colors]) => (
-                  <button
-                    key={name}
-                    onClick={() => setPaletteName(name)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded border text-sm ${
-                      paletteName === name
-                        ? "border-indigo-500 bg-indigo-500/20"
-                        : "border-slate-600 hover:border-slate-500"
-                    }`}
-                    aria-pressed={paletteName === name}
-                  >
-                    <span>{name}</span>
-                    <span className="flex gap-1">
-                      {colors.map((c) => (
-                        <span key={c} className="w-4 h-4 rounded" style={{ backgroundColor: c }} />
-                      ))}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Skin tones */}
-            <div>
-              <div className="text-sm font-semibold mb-2">Skin Tone</div>
-              <div className="grid grid-cols-8 gap-2">
-                {SKIN_TONES.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setSkinTone(c)}
-                    className={`h-8 rounded border ${
-                      skinTone === c ? "border-green-500" : "border-slate-600 hover:border-slate-500"
-                    }`}
-                    title={c}
-                    aria-label={`Skin tone ${c}`}
-                  >
-                    <span className="block w-full h-full rounded" style={{ backgroundColor: c }} />
-                  </button>
-                ))}
+                <button
+                  onClick={() => setFlags((f) => ({ ...f, mustache: !f.mustache }))}
+                  aria-pressed={flags.mustache}
+                  className={`px-3 py-2 rounded border text-sm ${flags.mustache ? "border-green-500 bg-green-500/20" : "border-slate-600 hover:border-slate-500"}`}
+                >
+                  Mustache
+                </button>
+                <button
+                  onClick={() => setFlags((f) => ({ ...f, lipstick: !f.lipstick }))}
+                  aria-pressed={flags.lipstick}
+                  className={`px-3 py-2 rounded border text-sm ${flags.lipstick ? "border-pink-500 bg-pink-500/20" : "border-slate-600 hover:border-slate-500"}`}
+                >
+                  Lipstick
+                </button>
+                <button
+                  onClick={() => setFlags((f) => ({ ...f, glasses: !f.glasses }))}
+                  aria-pressed={flags.glasses}
+                  className={`px-3 py-2 rounded border text-sm ${flags.glasses ? "border-cyan-500 bg-cyan-500/20" : "border-slate-600 hover:border-slate-500"}`}
+                >
+                  Glasses
+                </button>
               </div>
             </div>
           </div>

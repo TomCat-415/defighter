@@ -106,6 +106,41 @@ pub struct CustomizationData {
 }
 ```
 
+### On-chain Customization v1 (versioned, minimal indices)
+```rust
+// PDA: ["character_custom", player]
+#[account]
+pub struct CharacterCustomizationV1 {
+    pub player: Pubkey,           // 32
+    pub gender: u8,               // 0=Male,1=Female,2=NonBinary
+    pub palette_index: u8,        // 0..N (client manifest)
+    pub skin_tone_index: u8,      // 0..7
+    pub hair_style_index: u8,     // 0..11
+    pub hair_color_index: u8,     // 0..5
+    pub outfit_style_index: u8,   // 0..5 (battle-only; optional)
+    pub outfit_color_index: u8,   // 0..4
+    pub face_flags: u16,          // bitfield: mustache(0), lipstick(1), glasses(2), eyebrows_alt(3), mouth_alt(4)
+    pub accessory_slots: [u8; 2], // 0=headwear,1=weapon (255=none)
+    pub version: u8,              // starts at 1
+    pub reserved: [u8; 24],       // padding for future upgrades
+}
+```
+
+Design notes:
+- Store only indices/flags; rendering is 100% off-chain via a manifest mapping indices → assets/colors.
+- Never reorder existing IDs in the manifest; append new ones and keep aliases for deprecated.
+- If we outgrow `reserved`, add `CharacterCustomizationV2` under new seeds and gracefully fall back to V1 when V2 is absent.
+
+### V2 Migration Strategy (future-proofing)
+- Introduce `CharacterCustomizationV2` with added fields (e.g., backgrounds, animations).
+- Add a migration instruction that reads V1, writes V2, and closes V1 to reclaim rent (optional).
+- Frontend loads V2 if present else V1; both map into the same client-side `Customization` DTO.
+
+### Off-chain Manifest (assets and palettes)
+- JSON hosted in the app (or CDN) describing palettes, hair/outfits, and layer order for two renderers: `avatar` (face) and `battle` (body).
+- Changing art, palettes, or layer composition is a manifest/assets update only; on-chain data remains stable.
+
+
 ### NFT Verification
 - On-chain verification of NFT ownership
 - Caching system for frequently checked collections

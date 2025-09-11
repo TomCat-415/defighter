@@ -124,6 +124,8 @@ pub enum Gender {
 }
 ```
 
+Note: Final on-chain layout will follow a minimal, versioned indices model (see `docs/CHARACTER_CUSTOMIZATION_PLAN.md`): store enums/indices/flags only; assets and palettes live in an off-chain manifest so visuals can evolve without migrations.
+
 **PDA Design:**
 - Seeds: `["character_custom", player.key().as_ref()]`
 - One-to-one relationship with Player account

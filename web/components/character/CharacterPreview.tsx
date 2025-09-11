@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
-
-type Gender = "male" | "female" | "nonbinary";
+import type { Gender } from "@/components/character/constants";
 
 interface CharacterPreviewProps {
   gender: Gender;
