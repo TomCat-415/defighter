@@ -68,8 +68,8 @@ pub fn handler(ctx: Context<ResolveBattle>) -> Result<()> {
         );
         
         // Apply damage
-        battle.challenger_hp = opponent_outcome.remaining_hp;
-        battle.opponent_hp = challenger_outcome.remaining_hp;
+        battle.challenger_hp = opponent_outcome.remaining_hp;  // Challenger's HP after opponent attacked
+        battle.opponent_hp = challenger_outcome.remaining_hp;  // Opponent's HP after challenger attacked
         
         // Determine winner based on remaining HP
         if battle.challenger_hp == 0 && battle.opponent_hp == 0 {

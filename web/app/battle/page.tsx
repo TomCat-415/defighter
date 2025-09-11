@@ -400,12 +400,18 @@ export default function BattlePage() {
         const challengerHP = bAcc.challengerHp || 0;
         const opponentHP = bAcc.opponentHp || 0;
         
+        // Calculate expected damage for debugging
+        const expectedMemeBombDmg = 100 * 0.80; // Shitposter → Builder (losing matchup)
+        const expectedShipItDmg = 100 * 1.25;   // Builder → Shitposter (winning matchup)
+        
         setLog((l) => [
           `🏆 Winner: ${winnerName}`,
           `💀 Final HP - A: ${challengerHP}/200 | B: ${opponentHP}/200`,
           `⚔️ Moves: A used MemeBomb vs B used ShipIt`,
+          `🧮 Expected Damage - MemeBomb: ${expectedMemeBombDmg} | ShipIt: ${expectedShipItDmg}`,
           `📊 XP - A: ${xpA0.toString()} → ${xpA1.toString()} (+${dA.toString()}) | B: ${xpB0.toString()} → ${xpB1.toString()} (+${dB.toString()})`,
           `✨ NEW BATTLE SYSTEM: HP-based with simultaneous move resolution!`,
+          `🔍 Debug: Both players starting with 200 HP each`,
           ...l,
         ]);
       } catch {}

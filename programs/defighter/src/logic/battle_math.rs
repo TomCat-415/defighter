@@ -189,6 +189,56 @@ mod tests {
     }
     
     #[test] 
+    fn test_battle_math_demo_scenario() {
+        use crate::state::player::{Player, FighterClass, MoveChoice};
+        
+        // Create basic players (no abilities, no XP)
+        let challenger = Player {
+            authority: anchor_lang::prelude::Pubkey::default(),
+            class: FighterClass::Shitposter,
+            xp: 0,
+            abilities: [0, 0, 0],
+            elo: 1000,
+            version: 1,
+        };
+        
+        let opponent = Player {
+            authority: anchor_lang::prelude::Pubkey::default(), 
+            class: FighterClass::Builder,
+            xp: 0,
+            abilities: [0, 0, 0],
+            elo: 1000,
+            version: 1,
+        };
+        
+        // Test MemeBomb (Shitposter → Builder)
+        let meme_bomb_outcome = calculate_battle_outcome(
+            MoveChoice::MemeBomb,
+            &challenger,
+            FighterClass::Builder,
+            200,
+            0 // VRF doesn't matter for basic moves
+        );
+        
+        // Should be: 100 * 0.80 * 1.0 * 1.0 = 80 damage
+        assert_eq!(meme_bomb_outcome.damage_dealt, 80);
+        assert_eq!(meme_bomb_outcome.remaining_hp, 120); // 200 - 80
+        
+        // Test ShipIt (Builder → Shitposter)  
+        let ship_it_outcome = calculate_battle_outcome(
+            MoveChoice::ShipIt,
+            &opponent,
+            FighterClass::Shitposter,
+            200,
+            0 // VRF doesn't matter for basic moves
+        );
+        
+        // Should be: 100 * 1.25 * 1.0 * 1.0 = 125 damage
+        assert_eq!(ship_it_outcome.damage_dealt, 125);
+        assert_eq!(ship_it_outcome.remaining_hp, 75); // 200 - 125
+    }
+    
+    #[test] 
     fn test_player_power() {
         let player = Player {
             authority: Pubkey::default(),
