@@ -4,7 +4,7 @@ On-chain PvP fighting game on Solana with Shitposter, Builder, VC archetypes. Co
 
 ## Quickstart (localnet)
 
-Prereqs: Solana CLI, Anchor CLI (0.31.x), Rust, Node 18+.
+Prereqs: Solana CLI, Anchor CLI (0.31.x), Rust, Node 18+
 
 ```bash
 # Terminal 1: start validator
