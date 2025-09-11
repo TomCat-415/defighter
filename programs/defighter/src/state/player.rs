@@ -20,14 +20,14 @@ pub enum FighterClass {
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
 pub enum MoveChoice {
     // Shitposter moves
-    MemeBomb = 0,
-    CopypastaStorm = 1,
+    MemeBomb = 0,      // Basic
+    RugPullRumor = 1,  // Special
     // Builder moves
-    ShipIt = 2,
-    TestnetDeploy = 3,
+    ShipIt = 2,        // Basic
+    TestnetDeploy = 3, // Special
     // VC moves
-    SeriesACannon = 4,
-    DueDiligenceDelay = 5,
+    SeriesACannon = 4, // Basic
+    ExitLiquidity = 5, // Special
 }
 
 impl MoveChoice {
@@ -35,10 +35,18 @@ impl MoveChoice {
 
     pub fn class(self) -> FighterClass {
         match self {
-            MoveChoice::MemeBomb | MoveChoice::CopypastaStorm => FighterClass::Shitposter,
+            MoveChoice::MemeBomb | MoveChoice::RugPullRumor => FighterClass::Shitposter,
             MoveChoice::ShipIt | MoveChoice::TestnetDeploy => FighterClass::Builder,
-            MoveChoice::SeriesACannon | MoveChoice::DueDiligenceDelay => FighterClass::VC,
+            MoveChoice::SeriesACannon | MoveChoice::ExitLiquidity => FighterClass::VC,
         }
+    }
+
+    pub fn is_special_move(self) -> bool {
+        matches!(self, 
+            MoveChoice::RugPullRumor | 
+            MoveChoice::TestnetDeploy | 
+            MoveChoice::ExitLiquidity
+        )
     }
 }
 
