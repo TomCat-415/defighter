@@ -470,12 +470,14 @@ export default function ProfilePage() {
                     const primary = paletteName && CRYPTO_PALETTES[paletteName]?.[0]
                       ? CRYPTO_PALETTES[paletteName][0]
                       : "#00D4FF";
-                  <AvatarPreview
-                    gender={(customizationDraft?.genderName || 'male') as any}
-                    primaryColor={primary}
-                    skinTone={customizationDraft?.skinToneHex || "#C89478"}
-                    flags={customizationDraft?.flags || { glasses: true }}
-                  />
+                    return (
+                      <AvatarPreview
+                        gender={(customizationDraft?.genderName || 'male') as any}
+                        primaryColor={primary}
+                        skinTone={customizationDraft?.skinToneHex || "#C89478"}
+                        flags={customizationDraft?.flags || { glasses: true }}
+                      />
+                    );
                   })()}
                 </div>
                 {!customizationExists && (
