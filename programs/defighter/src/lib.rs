@@ -89,19 +89,20 @@ pub mod defighter {
         )
     }
 
-    pub fn create_character_customization(
-        ctx: Context<CreateCharacterCustomization>,
-        data: state::customization::CharacterCustomizationDataV1,
-    ) -> Result<()> {
-        instructions::create_character_customization::handler(ctx, data)
-    }
+    // TODO: Fix character customization functions
+    // pub fn create_character_customization(
+    //     ctx: Context<CreateCharacterCustomization>,
+    //     data: state::customization::CharacterCustomizationDataV1,
+    // ) -> Result<()> {
+    //     instructions::create_character_customization::handler(ctx, data)
+    // }
 
-    pub fn update_character_customization(
-        ctx: Context<UpdateCharacterCustomization>,
-        data: state::customization::CharacterCustomizationDataV1,
-    ) -> Result<()> {
-        instructions::update_character_customization::handler(ctx, data)
-    }
+    // pub fn update_character_customization(
+    //     ctx: Context<UpdateCharacterCustomization>,
+    //     data: state::customization::CharacterCustomizationDataV1,
+    // ) -> Result<()> {
+    //     instructions::update_character_customization::handler(ctx, data)
+    // }
 }
 
 

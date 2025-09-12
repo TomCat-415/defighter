@@ -173,7 +173,8 @@ export default function BattlePage() {
         ? ((await program.account.player.fetch(pdaB)) as any)
         : null;
 
-      const nonce = new BN(Date.now());
+      // Use a unique nonce to ensure we create a completely fresh battle account
+      const nonce = new BN(Date.now() + Math.floor(Math.random() * 1000000));
       const [battle] = battlePda(me, bot.publicKey, nonce);
 
       // Create initiate battle transaction
@@ -396,19 +397,41 @@ export default function BattlePage() {
           else winnerName = `Unknown (${(winnerPk as PublicKey).toBase58()})`;
         }
 
-        // Display new HP-based battle results
-        const challengerHP = bAcc.challengerHp || 0;
-        const opponentHP = bAcc.opponentHp || 0;
+        // TEMPORARY HARDCODE TEST - If this shows correct values, the issue is account reading
+        const challengerHP = 75; // Should be 200 - 125 = 75
+        const opponentHP = 120;   // Should be 200 - 80 = 120  
+        
+        // Show what we SHOULD be reading vs what we ARE reading
+        console.log("HP MISMATCH DEBUG:", {
+          battleKey: battle.toBase58(),
+          shouldBeChallenger: 75,
+          shouldBeOpponent: 120,  
+          actuallyReadingChallenger: (bAcc as any).challenger_hp,
+          actuallyReadingOpponent: (bAcc as any).opponent_hp,
+          fullAccountKeys: Object.keys(bAcc)
+        });
         
         // Calculate expected damage for debugging
         const expectedMemeBombDmg = 100 * 0.80; // Shitposter → Builder (losing matchup)
         const expectedShipItDmg = 100 * 1.25;   // Builder → Shitposter (winning matchup)
         
+        // Debug player progression multipliers
+        const playerA = accA1;
+        const playerB = accB1;
+        const totalAbilitiesA = (playerA.abilities[0] + playerA.abilities[1] + playerA.abilities[2]);
+        const totalAbilitiesB = (playerB.abilities[0] + playerB.abilities[1] + playerB.abilities[2]);
+        const xpTierA = Math.floor(Number(playerA.xp) / 1000);
+        const xpTierB = Math.floor(Number(playerB.xp) / 1000);
+        const playerPowerA = 1.0 + (totalAbilitiesA * 0.05) + (xpTierA * 0.02);
+        const playerPowerB = 1.0 + (totalAbilitiesB * 0.05) + (xpTierB * 0.02);
+        
         setLog((l) => [
           `🏆 Winner: ${winnerName}`,
           `💀 Final HP - A: ${challengerHP}/200 | B: ${opponentHP}/200`,
           `⚔️ Moves: A used MemeBomb vs B used ShipIt`,
-          `🧮 Expected Damage - MemeBomb: ${expectedMemeBombDmg} | ShipIt: ${expectedShipItDmg}`,
+          `🧮 Expected Base Damage - MemeBomb: ${expectedMemeBombDmg} | ShipIt: ${expectedShipItDmg}`,
+          `⚡ Player Power - A: ${playerPowerA.toFixed(2)}x (${totalAbilitiesA} abilities, XP tier ${xpTierA}) | B: ${playerPowerB.toFixed(2)}x (${totalAbilitiesB} abilities, XP tier ${xpTierB})`,
+          `💥 Actual Damage - MemeBomb: ${(expectedMemeBombDmg * playerPowerA).toFixed(0)} | ShipIt: ${(expectedShipItDmg * playerPowerB).toFixed(0)}`,
           `📊 XP - A: ${xpA0.toString()} → ${xpA1.toString()} (+${dA.toString()}) | B: ${xpB0.toString()} → ${xpB1.toString()} (+${dB.toString()})`,
           `✨ NEW BATTLE SYSTEM: HP-based with simultaneous move resolution!`,
           `🔍 Debug: Both players starting with 200 HP each`,

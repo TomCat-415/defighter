@@ -59,6 +59,16 @@ pub fn calculate_battle_outcome(
     let final_damage = (base_damage * class_advantage * player_power * move_multiplier) as u16;
     let remaining_hp = defender_hp.saturating_sub(final_damage);
     
+    // ULTRA DEBUG: Test the exact scenario
+    if defender_hp == 200 && final_damage == 80 {
+        msg!("CRITICAL DEBUG: 200 HP - 80 damage = {} (should be 120)", remaining_hp);
+        msg!("CRITICAL DEBUG: saturating_sub test: {}", 200u16.saturating_sub(80u16));
+    }
+    if defender_hp == 200 && final_damage == 125 {
+        msg!("CRITICAL DEBUG: 200 HP - 125 damage = {} (should be 75)", remaining_hp);
+        msg!("CRITICAL DEBUG: saturating_sub test: {}", 200u16.saturating_sub(125u16));
+    }
+    
     BattleOutcome {
         damage_dealt: final_damage,
         move_result,

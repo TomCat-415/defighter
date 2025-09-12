@@ -50,6 +50,12 @@ pub fn handler(ctx: Context<ResolveBattle>) -> Result<()> {
             &battle.key(),
         );
         
+        // DEBUG: Log the inputs to battle outcome calculation
+        msg!("DEBUG: Challenger move: {:?}, attacking opponent (class: {:?}) with {} HP", 
+            c_move, ctx.accounts.player_opponent.class, battle.opponent_hp);
+        msg!("DEBUG: Opponent move: {:?}, attacking challenger (class: {:?}) with {} HP", 
+            o_move, ctx.accounts.player_challenger.class, battle.challenger_hp);
+
         // Calculate damage for each player's move
         let challenger_outcome = calculate_battle_outcome(
             c_move,
@@ -67,17 +73,45 @@ pub fn handler(ctx: Context<ResolveBattle>) -> Result<()> {
             o_vrf,
         );
         
-        // Apply damage
-        battle.challenger_hp = opponent_outcome.remaining_hp;  // Challenger's HP after opponent attacked
-        battle.opponent_hp = challenger_outcome.remaining_hp;  // Opponent's HP after challenger attacked
+        // DEBUG: Log the outcomes
+        msg!("DEBUG: Challenger outcome - damage: {}, remaining_hp: {}", 
+            challenger_outcome.damage_dealt, challenger_outcome.remaining_hp);
+        msg!("DEBUG: Opponent outcome - damage: {}, remaining_hp: {}", 
+            opponent_outcome.damage_dealt, opponent_outcome.remaining_hp);
         
-        // Determine winner based on remaining HP
+        // Store starting HP for true damage calculation
+        let challenger_start_hp = battle.challenger_hp as i32;
+        let opponent_start_hp = battle.opponent_hp as i32;
+        
+        // Apply the correctly calculated remaining HP
+        battle.challenger_hp = opponent_outcome.remaining_hp;  // Challenger's HP after opponent's attack
+        battle.opponent_hp = challenger_outcome.remaining_hp;  // Opponent's HP after challenger's attack
+        
+        // Calculate true final HP (allowing negative values for better tiebreaking)
+        let challenger_true_hp = challenger_start_hp - (opponent_outcome.damage_dealt as i32);
+        let opponent_true_hp = opponent_start_hp - (challenger_outcome.damage_dealt as i32);
+        
+        // Determine winner based on remaining HP (using true HP for ties when both die)
         if battle.challenger_hp == 0 && battle.opponent_hp == 0 {
-            // Both died - tie break using VRF
-            if cfg.tie_break_rand {
-                winner = Some(if c_vrf % 2 == 0 { battle.challenger } else { battle.opponent });
+            // Both died - whoever has less negative HP wins (took less overkill damage)
+            if challenger_true_hp > opponent_true_hp {
+                winner = Some(battle.challenger); // e.g., -20 > -50
+            } else if opponent_true_hp > challenger_true_hp {
+                winner = Some(battle.opponent);
             } else {
-                winner = Some(battle.challenger);
+                // True tie (same negative HP) - use damage dealt as tiebreaker
+                if challenger_outcome.damage_dealt > opponent_outcome.damage_dealt {
+                    winner = Some(battle.challenger);
+                } else if opponent_outcome.damage_dealt > challenger_outcome.damage_dealt {
+                    winner = Some(battle.opponent);
+                } else {
+                    // Ultimate tie - use VRF
+                    if cfg.tie_break_rand {
+                        winner = Some(if c_vrf % 2 == 0 { battle.challenger } else { battle.opponent });
+                    } else {
+                        winner = Some(battle.challenger);
+                    }
+                }
             }
         } else if battle.challenger_hp == 0 {
             winner = Some(battle.opponent);

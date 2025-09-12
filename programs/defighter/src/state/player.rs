@@ -10,14 +10,14 @@ pub struct Player {
     pub version: u8,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum FighterClass {
     Shitposter = 0,
     Builder = 1,
     VC = 2,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum MoveChoice {
     // Shitposter moves
     MemeBomb = 0,      // Basic
