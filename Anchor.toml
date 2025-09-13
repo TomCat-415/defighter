@@ -2,7 +2,12 @@
 seeds = true
 skip-lint = false
 
-[programs.localnet]
+# Optional: keep localnet mapping if you ever run a local validator
+# [programs.localnet]
+# defighter = "YourLocalProgramIdHere"
+
+# ✅ Add this block so Anchor knows your program id on devnet
+[programs.devnet]
 defighter = "HGkRbNawHR3PbA2h1LgqtMNCj6jcrS14c86wDUvS3dTL"
 
 [registry]
@@ -16,5 +21,3 @@ wallet = "~/.config/solana/id.json"
 test = "anchor test"
 build = "anchor build"
 deploy = "anchor deploy"
-
-
