@@ -1,16 +1,65 @@
 "use client";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { BN } from "@coral-xyz/anchor";
-import { PublicKey, SystemProgram, LAMPORTS_PER_SOL, Transaction } from "@solana/web3.js";
+import {
+  PublicKey,
+  SystemProgram,
+  LAMPORTS_PER_SOL,
+  Transaction,
+} from "@solana/web3.js";
 import { useState } from "react";
 import { getProgram } from "@/lib/program";
 import { playerPda, battlePda, configPda } from "@/lib/pdas";
 import { randomSalt32, commitmentHash } from "@/lib/commitment";
 import { loadOrCreateBotKeypair } from "@/lib/bot-storage";
 
+/** View model with camelCase keys for the UI */
+type BattleView = {
+  pubkey: string;
+  challenger: string;
+  opponent: string;
+  hpChallenger: number;
+  hpOpponent: number;
+  winner?: string | null;
+  state?: string;
+};
+
+function toBattleView(battlePubkey: PublicKey, b: any): BattleView {
+  const toStr = (x: any) => (x?.toBase58?.() ? x.toBase58() : String(x ?? ""));
+  const toNum = (x: any) => {
+    if (x == null) return 0;
+    if (typeof x === "number") return x;
+    if (typeof x === "bigint") return Number(x);
+    if (typeof x === "string") return Number(x);
+    if (typeof x?.toNumber === "function") return x.toNumber();       // BN
+    if (typeof x?.toString === "function") return Number(x.toString());
+    return Number(x);
+  };
+
+  // Accept BOTH snake_case and camelCase from Anchor/account fetch
+  const hpChallengerRaw = b?.challenger_hp ?? b?.challengerHp ?? 0;
+  const hpOpponentRaw   = b?.opponent_hp   ?? b?.opponentHp   ?? 0;
+
+  // State pretty-print
+  let state: string | undefined;
+  if (b?.state && typeof b.state === "object") {
+    state = Object.keys(b.state)[0];
+  }
+
+  return {
+    pubkey: battlePubkey.toBase58(),
+    challenger: toStr(b?.challenger),
+    opponent: toStr(b?.opponent),
+    hpChallenger: toNum(hpChallengerRaw),
+    hpOpponent: toNum(hpOpponentRaw),
+    winner: b?.winner ? toStr(b.winner) : null,
+    state,
+  };
+}
+
 export default function BattlePage() {
   const { connection } = useConnection();
-  const { publicKey, wallet, sendTransaction } = useWallet();
+  const { publicKey, wallet } = useWallet();
   const [log, setLog] = useState<string[]>([]);
   const [airdropping, setAirdropping] = useState<boolean>(false);
 
@@ -21,7 +70,6 @@ export default function BattlePage() {
   ): Promise<string> {
     const balanceBefore = await connection.getBalance(pk);
     const beforeSol = balanceBefore / LAMPORTS_PER_SOL;
-
     setLog((l) => [`[${operation}] Balance before: ${beforeSol.toFixed(6)} SOL`, ...l]);
 
     const txSig = await txPromise;
@@ -44,9 +92,10 @@ export default function BattlePage() {
     program?: any,
     payer?: PublicKey
   ) {
-    const needLamports = Math.max(0, minSol * LAMPORTS_PER_SOL);
+    const needLamports = Math.max(0, Math.floor(minSol * LAMPORTS_PER_SOL));
     const bal = await connection.getBalance(pk);
     if (bal >= needLamports) return;
+
     try {
       const sig = await connection.requestAirdrop(pk, needLamports - bal);
       await connection.confirmTransaction(sig, "confirmed");
@@ -58,7 +107,7 @@ export default function BattlePage() {
       const tx = new Transaction().add(
         SystemProgram.transfer({ fromPubkey: payer, toPubkey: pk, lamports })
       );
-      // @ts-ignore
+      // @ts-ignore Anchor provider on the program
       const provider = program.provider;
       await provider.sendAndConfirm(tx, []);
       setLog((l) => [
@@ -80,6 +129,7 @@ export default function BattlePage() {
       const program = getProgram(connection, wallet.adapter as any);
       const me = publicKey;
 
+      // --- Config init (once) ---
       const [cfg] = configPda();
       const cfgInfo = await connection.getAccountInfo(cfg);
       if (!cfgInfo) {
@@ -109,6 +159,7 @@ export default function BattlePage() {
         setLog((l) => ["Config initialized", ...l]);
       }
 
+      // --- Ensure players exist/funded ---
       const [pdaA] = playerPda(me);
       const bot = loadOrCreateBotKeypair();
       const [pdaB] = playerPda(bot.publicKey);
@@ -129,8 +180,8 @@ export default function BattlePage() {
       }
 
       if (!(await connection.getAccountInfo(pdaB))) {
-        // Create Player B using the same direct approach
-        const createPlayerBInstruction = await program.methods
+        // Multi-signer (bot + Phantom) path
+        const ix = await program.methods
           .createPlayer({ builder: {} })
           .accounts({
             player: pdaB,
@@ -138,34 +189,29 @@ export default function BattlePage() {
             systemProgram: SystemProgram.programId,
           } as any)
           .instruction();
-        
-        const playerBTx = new Transaction();
-        playerBTx.add(createPlayerBInstruction);
-        playerBTx.feePayer = me; // You pay fees
-        const { blockhash: playerBBlockhash } = await connection.getLatestBlockhash();
-        playerBTx.recentBlockhash = playerBBlockhash;
-        
-        // Bot signs first
-        playerBTx.partialSign(bot);
-        
-        // Then Phantom signs
+
+        const tx = new Transaction().add(ix);
+        tx.feePayer = me;
+        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+        tx.partialSign(bot);
+
+        // Phantom signs fee-payer side
+        // @ts-ignore
         const phantom = (window as any).phantom?.solana;
-        const balanceBeforePlayerB = await connection.getBalance(me);
-        const signedPlayerBTx = await phantom.signTransaction(playerBTx);
-        const playerBSig = await connection.sendRawTransaction(signedPlayerBTx.serialize());
-        await connection.confirmTransaction(playerBSig, 'confirmed');
-        
-        const balanceAfterPlayerB = await connection.getBalance(me);
-        const costPlayerB = (balanceBeforePlayerB - balanceAfterPlayerB) / LAMPORTS_PER_SOL;
-        
+        const balBefore = await connection.getBalance(me);
+        const signed = await phantom.signTransaction(tx);
+        const sig = await connection.sendRawTransaction(signed.serialize());
+        await connection.confirmTransaction(sig, "confirmed");
+        const balAfter = await connection.getBalance(me);
+
         setLog((l) => [
-          `[Create Player B] Cost: ${costPlayerB.toFixed(6)} SOL`,
-          `[Create Player B] TX: ${playerBSig}`,
+          `[Create Player B] Cost: ${((balBefore - balAfter) / LAMPORTS_PER_SOL).toFixed(6)} SOL`,
+          `[Create Player B] TX: ${sig}`,
           ...l,
         ]);
       }
 
-      // Baseline XP
+      // Baseline XP (optional)
       const accA0 = (await connection.getAccountInfo(pdaA))
         ? ((await program.account.player.fetch(pdaA)) as any)
         : null;
@@ -173,60 +219,41 @@ export default function BattlePage() {
         ? ((await program.account.player.fetch(pdaB)) as any)
         : null;
 
-      // Use a unique nonce to ensure we create a completely fresh battle account
-      const nonce = new BN(Date.now() + Math.floor(Math.random() * 1000000));
+      // --- Battle lifecycle ---
+      const nonce = new BN(Date.now() + Math.floor(Math.random() * 1_000_000));
       const [battle] = battlePda(me, bot.publicKey, nonce);
 
-      // Create initiate battle transaction
-      const instruction = await program.methods
-        .initiateBattle(bot.publicKey, nonce, new BN(50), new BN(50))
-        .accounts({
-          battle,
-          challenger: me,
-          systemProgram: SystemProgram.programId,
-          clock: new PublicKey("SysvarC1ock11111111111111111111111111111111"),
-        } as any)
-        .instruction();
-      
-      // Create completely fresh Transaction object
-      const freshTx = new Transaction();
-      freshTx.add(instruction);
-      freshTx.feePayer = me;
-      const { blockhash } = await connection.getLatestBlockhash();
-      freshTx.recentBlockhash = blockhash;
-      
-      console.log("Fresh Transaction created:", {
-        feePayer: freshTx.feePayer.toBase58(),
-        recentBlockhash: freshTx.recentBlockhash,
-        instructions: freshTx.instructions.length,
-        signatures: freshTx.signatures.length,
-        canSerialize: typeof freshTx.serialize === 'function'
-      });
-      
-      const balanceBefore = await connection.getBalance(me);
-      
-      // Use direct Phantom API with fresh Transaction
-      const phantom = (window as any).phantom?.solana;
-      if (!phantom?.signTransaction) {
-        throw new Error('Phantom not available');
+      // Initiate (single-signer)
+      {
+        const ix = await program.methods
+          .initiateBattle(bot.publicKey, nonce, new BN(50), new BN(50))
+          .accounts({
+            battle,
+            challenger: me,
+            systemProgram: SystemProgram.programId,
+            clock: new PublicKey("SysvarC1ock11111111111111111111111111111111"),
+          } as any)
+          .instruction();
+
+        const tx = new Transaction().add(ix);
+        tx.feePayer = me;
+        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+
+        // @ts-ignore
+        const phantom = (window as any).phantom?.solana;
+        const balBefore = await connection.getBalance(me);
+        const signed = await phantom.signTransaction(tx);
+        const sig = await connection.sendRawTransaction(signed.serialize());
+        await connection.confirmTransaction(sig, "confirmed");
+        const balAfter = await connection.getBalance(me);
+
+        setLog((l) => [
+          `[Initiate Battle] Cost: ${((balBefore - balAfter) / LAMPORTS_PER_SOL).toFixed(6)} SOL`,
+          `[Initiate Battle] TX: ${sig}`,
+          ...l,
+        ]);
+        setLog((l) => ["Battle initiated", ...l]);
       }
-      
-      console.log("Calling Phantom with fresh Transaction...");
-      const signedTx = await phantom.signTransaction(freshTx);
-      console.log("Phantom signed successfully!");
-      
-      const initSig = await connection.sendRawTransaction(signedTx.serialize());
-      await connection.confirmTransaction(initSig, 'confirmed');
-      
-      const balanceAfter = await connection.getBalance(me);
-      const costSol = (balanceBefore - balanceAfter) / LAMPORTS_PER_SOL;
-      
-      setLog((l) => [
-        `[Initiate Battle] Cost: ${costSol.toFixed(6)} SOL`,
-        `[Initiate Battle] TX: ${initSig}`,
-        ...l,
-      ]);
-      setLog((l) => ["Battle initiated", ...l]);
 
       const saltA = randomSalt32();
       const saltB = randomSalt32();
@@ -235,132 +262,133 @@ export default function BattlePage() {
       const hashA = commitmentHash(moveA, saltA, me, battle);
       const hashB = commitmentHash(moveB, saltB, bot.publicKey, battle);
 
-      // Commit Move A - direct approach (single signer)
-      const commitMoveAInstruction = await program.methods
-        .commitMove([...hashA] as any)
-        .accounts({
-          battle,
-          player: me,
-          clock: new PublicKey("SysvarC1ock11111111111111111111111111111111"),
-        } as any)
-        .instruction();
-      
-      const commitATx = new Transaction();
-      commitATx.add(commitMoveAInstruction);
-      commitATx.feePayer = me;
-      const { blockhash: commitABlockhash } = await connection.getLatestBlockhash();
-      commitATx.recentBlockhash = commitABlockhash;
-      
-      const balanceBeforeCommitA = await connection.getBalance(me);
-      const signedCommitATx = await phantom.signTransaction(commitATx);
-      const commitASig = await connection.sendRawTransaction(signedCommitATx.serialize());
-      await connection.confirmTransaction(commitASig, 'confirmed');
-      
-      const balanceAfterCommitA = await connection.getBalance(me);
-      const costCommitA = (balanceBeforeCommitA - balanceAfterCommitA) / LAMPORTS_PER_SOL;
-      
-      setLog((l) => [
-        `[Commit Move A] Cost: ${costCommitA.toFixed(6)} SOL`,
-        `[Commit Move A] TX: ${commitASig}`,
-        ...l,
-      ]);
+      // Commit A (single-signer)
+      {
+        const ix = await program.methods
+          .commitMove([...hashA] as any)
+          .accounts({
+            battle,
+            player: me,
+            clock: new PublicKey("SysvarC1ock11111111111111111111111111111111"),
+          } as any)
+          .instruction();
 
-      // Commit Move B - direct approach
-      const commitMoveBInstruction = await program.methods
-        .commitMove([...hashB] as any)
-        .accounts({
-          battle,
-          player: bot.publicKey,
-          clock: new PublicKey("SysvarC1ock11111111111111111111111111111111"),
-        } as any)
-        .instruction();
-      
-      const commitBTx = new Transaction();
-      commitBTx.add(commitMoveBInstruction);
-      commitBTx.feePayer = me;
-      const { blockhash: commitBBlockhash } = await connection.getLatestBlockhash();
-      commitBTx.recentBlockhash = commitBBlockhash;
-      
-      const balanceBeforeCommitB = await connection.getBalance(me);
-      commitBTx.partialSign(bot);
-      const signedCommitBTx = await phantom.signTransaction(commitBTx);
-      const commitBSig = await connection.sendRawTransaction(signedCommitBTx.serialize());
-      await connection.confirmTransaction(commitBSig, 'confirmed');
-      
-      const balanceAfterCommitB = await connection.getBalance(me);
-      const costCommitB = (balanceBeforeCommitB - balanceAfterCommitB) / LAMPORTS_PER_SOL;
-      
-      setLog((l) => [
-        `[Commit Move B] Cost: ${costCommitB.toFixed(6)} SOL`,
-        `[Commit Move B] TX: ${commitBSig}`,
-        ...l,
-      ]);
-      setLog((l) => ["Moves committed", ...l]);
+        const tx = new Transaction().add(ix);
+        tx.feePayer = me;
+        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
 
-      // Reveal Move A - direct approach (single signer)
-      const revealMoveAInstruction = await program.methods
-        .revealMove({ memeBomb: {} } as any, [...saltA] as any)
-        .accounts({
-          battle,
-          player: me,
-          playerAccount: pdaA,
-          clock: new PublicKey("SysvarC1ock11111111111111111111111111111111"),
-        } as any)
-        .instruction();
-      
-      const revealATx = new Transaction();
-      revealATx.add(revealMoveAInstruction);
-      revealATx.feePayer = me;
-      const { blockhash: revealABlockhash } = await connection.getLatestBlockhash();
-      revealATx.recentBlockhash = revealABlockhash;
-      
-      const balanceBeforeRevealA = await connection.getBalance(me);
-      const signedRevealATx = await phantom.signTransaction(revealATx);
-      const revealASig = await connection.sendRawTransaction(signedRevealATx.serialize());
-      await connection.confirmTransaction(revealASig, 'confirmed');
-      
-      const balanceAfterRevealA = await connection.getBalance(me);
-      const costRevealA = (balanceBeforeRevealA - balanceAfterRevealA) / LAMPORTS_PER_SOL;
-      
-      setLog((l) => [
-        `[Reveal Move A] Cost: ${costRevealA.toFixed(6)} SOL`,
-        `[Reveal Move A] TX: ${revealASig}`,
-        ...l,
-      ]);
+        // @ts-ignore
+        const phantom = (window as any).phantom?.solana;
+        const balBefore = await connection.getBalance(me);
+        const signed = await phantom.signTransaction(tx);
+        const sig = await connection.sendRawTransaction(signed.serialize());
+        await connection.confirmTransaction(sig, "confirmed");
+        const balAfter = await connection.getBalance(me);
 
-      // Reveal Move B - direct approach  
-      const revealMoveBInstruction = await program.methods
-        .revealMove({ shipIt: {} } as any, [...saltB] as any)
-        .accounts({
-          battle,
-          player: bot.publicKey,
-          playerAccount: pdaB,
-          clock: new PublicKey("SysvarC1ock11111111111111111111111111111111"),
-        } as any)
-        .instruction();
-      
-      const revealBTx = new Transaction();
-      revealBTx.add(revealMoveBInstruction);
-      revealBTx.feePayer = me;
-      const { blockhash: revealBBlockhash } = await connection.getLatestBlockhash();
-      revealBTx.recentBlockhash = revealBBlockhash;
-      
-      const balanceBeforeRevealB = await connection.getBalance(me);
-      revealBTx.partialSign(bot);
-      const signedRevealBTx = await phantom.signTransaction(revealBTx);
-      const revealBSig = await connection.sendRawTransaction(signedRevealBTx.serialize());
-      await connection.confirmTransaction(revealBSig, 'confirmed');
-      
-      const balanceAfterRevealB = await connection.getBalance(me);
-      const costRevealB = (balanceBeforeRevealB - balanceAfterRevealB) / LAMPORTS_PER_SOL;
-      
-      setLog((l) => [
-        `[Reveal Move B] Cost: ${costRevealB.toFixed(6)} SOL`,
-        `[Reveal Move B] TX: ${revealBSig}`,
-        ...l,
-      ]);
-      setLog((l) => ["Moves revealed", ...l]);
+        setLog((l) => [
+          `[Commit Move A] Cost: ${((balBefore - balAfter) / LAMPORTS_PER_SOL).toFixed(6)} SOL`,
+          `[Commit Move A] TX: ${sig}`,
+          ...l,
+        ]);
+      }
 
+      // Commit B (multi-signer)
+      {
+        const ix = await program.methods
+          .commitMove([...hashB] as any)
+          .accounts({
+            battle,
+            player: bot.publicKey,
+            clock: new PublicKey("SysvarC1ock11111111111111111111111111111111"),
+          } as any)
+          .instruction();
+
+        const tx = new Transaction().add(ix);
+        tx.feePayer = me;
+        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+        tx.partialSign(bot);
+
+        // @ts-ignore
+        const phantom = (window as any).phantom?.solana;
+        const balBefore = await connection.getBalance(me);
+        const signed = await phantom.signTransaction(tx);
+        const sig = await connection.sendRawTransaction(signed.serialize());
+        await connection.confirmTransaction(sig, "confirmed");
+        const balAfter = await connection.getBalance(me);
+
+        setLog((l) => [
+          `[Commit Move B] Cost: ${((balBefore - balAfter) / LAMPORTS_PER_SOL).toFixed(6)} SOL`,
+          `[Commit Move B] TX: ${sig}`,
+          ...l,
+        ]);
+        setLog((l) => ["Moves committed", ...l]);
+      }
+
+      // Reveal A (single-signer)
+      {
+        const ix = await program.methods
+          .revealMove({ memeBomb: {} } as any, [...saltA] as any)
+          .accounts({
+            battle,
+            player: me,
+            playerAccount: pdaA,
+            clock: new PublicKey("SysvarC1ock11111111111111111111111111111111"),
+          } as any)
+          .instruction();
+
+        const tx = new Transaction().add(ix);
+        tx.feePayer = me;
+        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+
+        // @ts-ignore
+        const phantom = (window as any).phantom?.solana;
+        const balBefore = await connection.getBalance(me);
+        const signed = await phantom.signTransaction(tx);
+        const sig = await connection.sendRawTransaction(signed.serialize());
+        await connection.confirmTransaction(sig, "confirmed");
+        const balAfter = await connection.getBalance(me);
+
+        setLog((l) => [
+          `[Reveal Move A] Cost: ${((balBefore - balAfter) / LAMPORTS_PER_SOL).toFixed(6)} SOL`,
+          `[Reveal Move A] TX: ${sig}`,
+          ...l,
+        ]);
+      }
+
+      // Reveal B (multi-signer)
+      {
+        const ix = await program.methods
+          .revealMove({ shipIt: {} } as any, [...saltB] as any)
+          .accounts({
+            battle,
+            player: bot.publicKey,
+            playerAccount: pdaB,
+            clock: new PublicKey("SysvarC1ock11111111111111111111111111111111"),
+          } as any)
+          .instruction();
+
+        const tx = new Transaction().add(ix);
+        tx.feePayer = me;
+        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+        tx.partialSign(bot);
+
+        // @ts-ignore
+        const phantom = (window as any).phantom?.solana;
+        const balBefore = await connection.getBalance(me);
+        const signed = await phantom.signTransaction(tx);
+        const sig = await connection.sendRawTransaction(signed.serialize());
+        await connection.confirmTransaction(sig, "confirmed");
+        const balAfter = await connection.getBalance(me);
+
+        setLog((l) => [
+          `[Reveal Move B] Cost: ${((balBefore - balAfter) / LAMPORTS_PER_SOL).toFixed(6)} SOL`,
+          `[Reveal Move B] TX: ${sig}`,
+          ...l,
+        ]);
+        setLog((l) => ["Moves revealed", ...l]);
+      }
+
+      // Resolve (single-signer via Anchor .rpc is fine)
       await logTransactionCost(
         me,
         "Resolve Battle",
@@ -377,67 +405,50 @@ export default function BattlePage() {
       );
       setLog((l) => ["Battle resolved", ...l]);
 
-      // Post-battle summary
+      // --- Post-battle summary (real HP from chain) ---
       try {
-        const bAcc = (await program.account.battle.fetch(battle)) as any;
-        const winnerPk: PublicKey | null = bAcc.winner ?? null;
+        // small delay helps avoid RPC race where the last write isn't visible yet
+        await new Promise((r) => setTimeout(r, 300));
+
+        const bAccRaw = (await program.account.battle.fetch(battle)) as any;
+
+        // Deep debug to see what fields you actually have
+        console.log("raw keys:", Object.keys(bAccRaw));
+        console.log(
+          "hp fields (snake/camel):",
+          (bAccRaw as any).challenger_hp,
+          (bAccRaw as any).opponent_hp,
+          (bAccRaw as any).challengerHp,
+          (bAccRaw as any).opponentHp
+        );
+
+        const view = toBattleView(battle, bAccRaw);
+
+        // Players for XP summary (optional)
         const accA1 = (await program.account.player.fetch(pdaA)) as any;
         const accB1 = (await program.account.player.fetch(pdaB)) as any;
-        const xpA0 = accA0 ? BigInt(accA0.xp.toString ? accA0.xp.toString() : accA0.xp) : 0n;
-        const xpB0 = accB0 ? BigInt(accB0.xp.toString ? accB0.xp.toString() : accB0.xp) : 0n;
-        const xpA1 = BigInt(accA1.xp.toString ? accA1.xp.toString() : accA1.xp);
-        const xpB1 = BigInt(accB1.xp.toString ? accB1.xp.toString() : accB1.xp);
+        const toBig = (v: any) => BigInt(v?.toString?.() ?? v ?? 0);
+        const xpA0 = accA0 ? toBig(accA0.xp) : 0n;
+        const xpB0 = accB0 ? toBig(accB0.xp) : 0n;
+        const xpA1 = toBig(accA1.xp);
+        const xpB1 = toBig(accB1.xp);
         const dA = xpA1 - xpA0;
         const dB = xpB1 - xpB0;
 
-        let winnerName = "<none>";
-        if (winnerPk) {
-          if ((winnerPk as PublicKey).equals(me)) winnerName = "A (You - Shitposter)";
-          else if ((winnerPk as PublicKey).equals(bot.publicKey)) winnerName = "B (Bot - Builder)";
-          else winnerName = `Unknown (${(winnerPk as PublicKey).toBase58()})`;
-        }
-
-        // TEMPORARY HARDCODE TEST - If this shows correct values, the issue is account reading
-        const challengerHP = 75; // Should be 200 - 125 = 75
-        const opponentHP = 120;   // Should be 200 - 80 = 120  
-        
-        // Show what we SHOULD be reading vs what we ARE reading
-        console.log("HP MISMATCH DEBUG:", {
-          battleKey: battle.toBase58(),
-          shouldBeChallenger: 75,
-          shouldBeOpponent: 120,  
-          actuallyReadingChallenger: (bAcc as any).challenger_hp,
-          actuallyReadingOpponent: (bAcc as any).opponent_hp,
-          fullAccountKeys: Object.keys(bAcc)
-        });
-        
-        // Calculate expected damage for debugging
-        const expectedMemeBombDmg = 100 * 0.80; // Shitposter → Builder (losing matchup)
-        const expectedShipItDmg = 100 * 1.25;   // Builder → Shitposter (winning matchup)
-        
-        // Debug player progression multipliers
-        const playerA = accA1;
-        const playerB = accB1;
-        const totalAbilitiesA = (playerA.abilities[0] + playerA.abilities[1] + playerA.abilities[2]);
-        const totalAbilitiesB = (playerB.abilities[0] + playerB.abilities[1] + playerB.abilities[2]);
-        const xpTierA = Math.floor(Number(playerA.xp) / 1000);
-        const xpTierB = Math.floor(Number(playerB.xp) / 1000);
-        const playerPowerA = 1.0 + (totalAbilitiesA * 0.05) + (xpTierA * 0.02);
-        const playerPowerB = 1.0 + (totalAbilitiesB * 0.05) + (xpTierB * 0.02);
-        
         setLog((l) => [
-          `🏆 Winner: ${winnerName}`,
-          `💀 Final HP - A: ${challengerHP}/200 | B: ${opponentHP}/200`,
-          `⚔️ Moves: A used MemeBomb vs B used ShipIt`,
-          `🧮 Expected Base Damage - MemeBomb: ${expectedMemeBombDmg} | ShipIt: ${expectedShipItDmg}`,
-          `⚡ Player Power - A: ${playerPowerA.toFixed(2)}x (${totalAbilitiesA} abilities, XP tier ${xpTierA}) | B: ${playerPowerB.toFixed(2)}x (${totalAbilitiesB} abilities, XP tier ${xpTierB})`,
-          `💥 Actual Damage - MemeBomb: ${(expectedMemeBombDmg * playerPowerA).toFixed(0)} | ShipIt: ${(expectedShipItDmg * playerPowerB).toFixed(0)}`,
+          `🏆 Winner: ${view.winner ?? "<none>"} (state: ${view.state ?? "unknown"})`,
+          `💀 Final HP - A: ${view.hpChallenger}/200 | B: ${view.hpOpponent}/200`,
+          `📦 Battle: ${view.pubkey}`,
+          `👤 A: ${view.challenger}`,
+          `🤖 B: ${view.opponent}`,
           `📊 XP - A: ${xpA0.toString()} → ${xpA1.toString()} (+${dA.toString()}) | B: ${xpB0.toString()} → ${xpB1.toString()} (+${dB.toString()})`,
-          `✨ NEW BATTLE SYSTEM: HP-based with simultaneous move resolution!`,
-          `🔍 Debug: Both players starting with 200 HP each`,
           ...l,
         ]);
-      } catch {}
+        console.log("Battle account (raw):", bAccRaw);
+        console.log("Battle view (normalized):", view);
+      } catch {
+        // ignore summary errors
+      }
     } catch (error: any) {
       console.error("Battle demo failed:", error);
       setLog((l) => [
@@ -453,7 +464,10 @@ export default function BattlePage() {
     if (!connection || !publicKey) return;
     setAirdropping(true);
     try {
-      const sig = await connection.requestAirdrop(publicKey, amountSol * LAMPORTS_PER_SOL);
+      const sig = await connection.requestAirdrop(
+        publicKey,
+        amountSol * LAMPORTS_PER_SOL
+      );
       await connection.confirmTransaction(sig, "confirmed");
       setLog((l) => [
         `Airdropped ${amountSol} SOL to ${publicKey.toBase58()}`,
