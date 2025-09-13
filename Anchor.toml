@@ -9,7 +9,7 @@ defighter = "HGkRbNawHR3PbA2h1LgqtMNCj6jcrS14c86wDUvS3dTL"
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
