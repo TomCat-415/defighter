@@ -1,4 +1,4 @@
-declare module "../target/idl/defighter.json" {
+declare module "@/idl/defighter.json" {
   const content: any;
   export default content;
 }
