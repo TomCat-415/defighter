@@ -8,7 +8,13 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5.4-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-14.2.5-000000?logo=next.js)](https://nextjs.org/)
 
-## 🎮 What is DeFighter?
+## 🎮 [**» PLAY NOW «**](https://defighter.vercel.app)
+
+**Try the live demo**: Connect your wallet, create your crypto archetype, and battle on-chain at [defighter.vercel.app](https://defighter.vercel.app)
+
+---
+
+## What is DeFighter?
 
 DeFighter is a sophisticated on-chain PvP battle system that combines game theory, cryptographic fairness, and Solana's high-performance blockchain. Players choose from crypto-native character archetypes and engage in strategic battles using commit-reveal mechanics to ensure fairness and prevent front-running.
 
@@ -155,12 +161,7 @@ cd client/ts && npm run local-demo    # Full demo against local validator
 - **Configurable Parameters**: Admin can adjust damage multipliers, XP rates
 - **Future Token Economics**: Ready for tokenized rewards and staking
 
-## 🌐 Live Demo
-
-**🎮 [Play Now: defighter.vercel.app](https://defighter.vercel.app)**
-- Connect your Phantom/Solflare wallet (devnet)
-- Create your crypto archetype and battle on-chain
-- Real-time battle animations with on-chain state updates
+## 📋 Deployment Info
 
 **Devnet Program**: `HGkRbNawHR3PbA2h1LgqtMNCj6jcrS14c86wDUvS3dTL`
 - Fully deployed and functional on Solana devnet
