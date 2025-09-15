@@ -924,6 +924,14 @@
             "type": {
               "option": "pubkey"
             }
+          },
+          {
+            "name": "challenger_hp",
+            "type": "u16"
+          },
+          {
+            "name": "opponent_hp",
+            "type": "u16"
           }
         ]
       }
@@ -970,12 +978,20 @@
             "type": "pubkey"
           },
           {
-            "name": "challenger_score",
-            "type": "i32"
+            "name": "challenger_hp",
+            "type": "u16"
           },
           {
-            "name": "opponent_score",
-            "type": "i32"
+            "name": "opponent_hp",
+            "type": "u16"
+          },
+          {
+            "name": "challenger_damage",
+            "type": "u16"
+          },
+          {
+            "name": "opponent_damage",
+            "type": "u16"
           }
         ]
       }
