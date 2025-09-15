@@ -138,19 +138,17 @@ export default function ProfilePage() {
             const [custPda] = customizationPda(playerPdaAddr);
             const info = await connection.getAccountInfo(custPda);
             setCustomizationExists(!!info);
-            if (info && program?.account?.characterCustomizationV1?.fetch) {
-              const c = await (program.account as any).characterCustomizationV1.fetch(custPda);
-              // Map indices → UI draft
-              const genderName = ['male','female','nonbinary'][c.gender] || 'male';
-              const paletteName = Object.keys(CRYPTO_PALETTES)[c.paletteIndex] || Object.keys(CRYPTO_PALETTES)[0];
-              const skinToneHex = ((): string => {
-                const tones = ["#F1D3C2","#E2B7A2","#C89478","#A96F4E","#7D4E34","#5C3A2A","#3E2921","#2A1D18"];
-                return tones[c.skinToneIndex] || tones[2];
-              })();
+            // TODO: Enable when characterCustomizationV1 account is added to IDL
+            if (info) {
+              console.log("Customization account exists but decoding not yet implemented");
+              // Use default values until proper account type is available
+              const genderName = 'male';
+              const paletteName = Object.keys(CRYPTO_PALETTES)[0];
+              const skinToneHex = "#C89478";
               const flags = {
-                mustache: (c.faceFlags & (1 << 0)) !== 0,
-                lipstick: (c.faceFlags & (1 << 1)) !== 0,
-                glasses: (c.faceFlags & (1 << 2)) !== 0,
+                mustache: false,
+                lipstick: false,
+                glasses: false,
               };
               setCustomizationDraft({ genderName, paletteName, skinToneHex, flags });
             }
