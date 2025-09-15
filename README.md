@@ -1,60 +1,199 @@
-# DeFighter (SBV Edition)
+# DeFighter 🥊⚔️
 
-On-chain PvP fighting game on Solana with Shitposter, Builder, VC archetypes. Commit–reveal fairness, u16 levels, XP, and tunable balance via Config PDA.
+**A fully on-chain PvP fighting game on Solana featuring crypto-native character archetypes and commit-reveal battle mechanics.**
 
-## Quickstart (localnet)
+[![Solana](https://img.shields.io/badge/Solana-Devnet-9945FF?logo=solana)](https://solana.com/)
+[![Anchor](https://img.shields.io/badge/Anchor-0.31.x-663399)](https://anchor-lang.com/)
+[![Rust](https://img.shields.io/badge/Rust-Latest-000000?logo=rust)](https://www.rust-lang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5.4-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-14.2.5-000000?logo=next.js)](https://nextjs.org/)
 
-Prereqs: Solana CLI, Anchor CLI (0.31.x), Rust, Node 18+
+## 🎮 What is DeFighter?
 
-```bash
-# Terminal 1: start validator
-solana-test-validator --reset --quiet
+DeFighter is a sophisticated on-chain PvP battle system that combines game theory, cryptographic fairness, and Solana's high-performance blockchain. Players choose from crypto-native character archetypes and engage in strategic battles using commit-reveal mechanics to ensure fairness and prevent front-running.
+
+### 🎯 Key Features
+
+- **⚡ Fully On-Chain**: All game logic, state, and randomness handled by Solana smart contracts
+- **🎭 Crypto-Native Classes**:
+  - **Shitposter**: Meme warfare specialist with viral attack patterns
+  - **Builder**: Ship-fast developer with deployment-based abilities
+  - **VC Chad**: Funding pressure expert with liquidity manipulation moves
+- **🔒 Commit-Reveal Battle System**: Cryptographically fair gameplay preventing front-running
+- **📈 Progressive Character System**: XP, leveling, and ability upgrades stored on-chain
+- **⚖️ Configurable Game Balance**: Admin-controlled parameters via Config PDA
+- **🌐 Full-Stack Implementation**: Rust/Anchor backend + TypeScript SDK + Next.js frontend
+
+## 🏗️ Technical Architecture
+
+### Smart Contract (Rust + Anchor)
+```
+programs/defighter/src/
+├── lib.rs              # Program entrypoint & instruction handlers
+├── state/              # Account structures (Player, Battle, Config PDAs)
+├── logic/              # Battle resolution & damage calculation
+├── instructions/       # Transaction handlers (create_player, commit_move, etc.)
+└── events.rs          # On-chain event emissions
 ```
 
+**Program ID (Devnet)**: `HGkRbNawHR3PbA2h1LgqtMNCj6jcrS14c86wDUvS3dTL`
+
+### Frontend Stack
+- **Web App**: Next.js 14 + TypeScript + Tailwind CSS
+- **Wallet Integration**: Solana Wallet Adapter with multi-wallet support
+- **State Management**: Zustand for client-side game state
+- **SDK**: Custom TypeScript SDK for program interaction
+
+### Key Technical Innovations
+
+1. **Commit-Reveal Fairness**: Players commit hashed moves, then reveal simultaneously to prevent strategic advantage
+2. **PDA-Based Architecture**: Uses Program Derived Addresses for deterministic account generation
+3. **Configurable Balance System**: On-chain parameters allow real-time game balance updates
+4. **Event-Driven Updates**: Smart contract events drive real-time UI updates
+
+## 🚀 Quick Start
+
+### Prerequisites
+- [Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools) (1.16+)
+- [Anchor CLI](https://www.anchor-lang.com/docs/installation) (0.31.x)
+- [Node.js](https://nodejs.org/) (18+)
+- [Rust](https://rustup.rs/) (latest stable)
+
+### Option 1: Web Interface (Recommended)
 ```bash
-# Terminal 2: build, deploy, run demo
-export ANCHOR_PROVIDER_URL=http://127.0.0.1:8899
-export ANCHOR_WALLET=$HOME/.config/solana/id.json
+# Clone and setup
+git clone https://github.com/your-username/defighter.git
+cd defighter
+
+# Install dependencies
+npm install
+cd web && npm install
+
+# Start web app (connects to devnet by default)
+npm run dev:devnet
+```
+Open [http://localhost:3000](http://localhost:3000) and connect your Phantom/Solflare wallet.
+
+### Option 2: CLI Demo
+```bash
+# Build and deploy locally
+solana-test-validator --reset --quiet &
 anchor build && anchor deploy
-cd client/ts
-npm i
-npx ts-node src/demo.ts
-```
 
-Or one-shot:
-```bash
+# Run TypeScript demo
 cd client/ts
-npm i
+npm install
 npm run local-demo
 ```
 
-## Structure
-- programs/defighter: Anchor program (Rust)
-- client/ts: TypeScript client + demo
-- docs/: design/spec
-
-## Notes
-- Program ID is generated at target/deploy/defighter-keypair.json and wired into Anchor.toml + IDL.
-- Config PDA is initialized on first run by the demo.
-- Change balance params by calling admin_update_config.
-
-## Troubleshooting (quick checks)
-
-If a terminal run fails:
-
+### Option 3: Devnet Testing
 ```bash
-# Same RPC?
-echo $ANCHOR_PROVIDER_URL
-solana config get
+# Set Solana to devnet
+solana config set --url https://api.devnet.solana.com
 
-# Wallet set?
-echo $ANCHOR_WALLET
+# Ensure you have devnet SOL
+solana airdrop 2
 
-# Kill old validator/faucet if ports are busy
-pkill -f solana-faucet || true
-pkill -f solana-test-validator || true
-
-# Then rerun the one-shot
-cd client/ts
-npm run local-demo
+# Run against live devnet deployment
+cd web
+npm run dev:devnet
 ```
+
+## 🎯 Game Mechanics
+
+### Battle Flow
+1. **Character Creation**: Choose class and customize abilities
+2. **Battle Initiation**: Challenge opponent with configurable time limits
+3. **Commit Phase**: Both players submit encrypted move commitments
+4. **Reveal Phase**: Players reveal actual moves + salt for verification
+5. **Resolution**: On-chain damage calculation and XP/level updates
+
+### Character Classes & Moves
+
+| Class | Basic Move | Special Move | Strategy |
+|-------|------------|--------------|----------|
+| **Shitposter** | Meme Bomb (100% hit) | Rug Pull Rumor (high-risk/reward) | Reliable damage vs gambling |
+| **Builder** | Ship It (consistent) | Testnet Deploy (deployment gamble) | Steady progress vs big risks |
+| **VC Chad** | Series A Cannon (funding pressure) | Exit Liquidity (market manipulation) | Pressure tactics vs timing |
+
+## 🛠️ Development
+
+### Project Structure
+```
+defighter/
+├── programs/defighter/     # Anchor smart contract (Rust)
+├── web/                   # Next.js frontend
+├── client/ts/            # TypeScript SDK + CLI demo
+├── docs/                 # Architecture & game design
+└── target/               # Compiled artifacts
+```
+
+### Key Commands
+```bash
+# Smart contract
+anchor build                    # Compile Rust program
+anchor test                     # Run on-chain tests
+anchor deploy --provider.cluster devnet  # Deploy to devnet
+
+# Frontend
+cd web && npm run dev          # Start development server
+cd web && npm run build        # Production build
+
+# CLI SDK
+cd client/ts && npm run local-demo    # Full demo against local validator
+```
+
+### Testing
+- **Unit Tests**: `anchor test` - Tests core game logic and edge cases
+- **Integration Tests**: TypeScript client in `client/ts/src/demo.ts`
+- **Manual Testing**: Web interface at `localhost:3000`
+
+## 📊 Game Economics
+
+- **Fair Battle Resolution**: Commit-reveal prevents information asymmetry
+- **Progressive Character Growth**: On-chain XP and ability upgrades
+- **Configurable Parameters**: Admin can adjust damage multipliers, XP rates
+- **Future Token Economics**: Ready for tokenized rewards and staking
+
+## 🌐 Live Demo
+
+**Web Interface**: [Coming Soon - Deploy to Vercel]
+- Connect wallet, create character, battle against AI or friends
+- Real-time battle animations and on-chain state updates
+
+**Devnet Program**: `HGkRbNawHR3PbA2h1LgqtMNCj6jcrS14c86wDUvS3dTL`
+- Fully deployed and functional on Solana devnet
+- Test with devnet SOL from faucet
+
+## 🔧 Configuration
+
+Game balance parameters stored in on-chain Config PDA:
+- Base damage values per class
+- XP gain rates and level requirements
+- Battle timeout settings
+- Critical hit probabilities
+
+## 📝 Smart Contract Security
+
+- **Commit-Reveal Pattern**: Prevents front-running and MEV
+- **PDA Validation**: Deterministic account derivation prevents account confusion
+- **Overflow Protection**: All arithmetic uses checked operations
+- **Access Control**: Admin functions properly gated
+
+## 🤝 Contributing
+
+This project demonstrates advanced Solana development patterns:
+- Complex state management with multiple PDA types
+- Cryptographic fairness mechanisms
+- Real-time frontend integration with on-chain state
+- Configurable on-chain parameters
+
+## 📄 License
+
+MIT License - Feel free to use this code as reference for your own Solana projects.
+
+---
+
+**Tech Stack**: Rust • Anchor • Solana • TypeScript • Next.js • Tailwind CSS • Web3.js
+
+Built with ❤️ for the Solana ecosystem
