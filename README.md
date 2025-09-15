@@ -12,6 +12,11 @@
 
 **Try the live demo**: Connect your wallet, create your crypto archetype, and battle on-chain at [defighter.vercel.app](https://defighter.vercel.app)
 
+### 🔧 Setup Required:
+1. **Switch your wallet to Devnet** (Settings → Change Network → Devnet)
+2. **Get free devnet SOL** from [Solana faucet](https://faucet.solana.com/)
+3. **Connect and play!**
+
 ---
 
 ## What is DeFighter?
