@@ -157,13 +157,14 @@ cd client/ts && npm run local-demo    # Full demo against local validator
 
 ## 🌐 Live Demo
 
-**Web Interface**: [Coming Soon - Deploy to Vercel]
-- Connect wallet, create character, battle against AI or friends
-- Real-time battle animations and on-chain state updates
+**🎮 [Play Now: defighter.vercel.app](https://defighter.vercel.app)**
+- Connect your Phantom/Solflare wallet (devnet)
+- Create your crypto archetype and battle on-chain
+- Real-time battle animations with on-chain state updates
 
 **Devnet Program**: `HGkRbNawHR3PbA2h1LgqtMNCj6jcrS14c86wDUvS3dTL`
 - Fully deployed and functional on Solana devnet
-- Test with devnet SOL from faucet
+- Get devnet SOL from [Solana faucet](https://faucet.solana.com/)
 
 ## 🔧 Configuration
 
