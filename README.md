@@ -17,10 +17,12 @@
 2. **Get free devnet SOL** from [Solana faucet](https://faucet.solana.com/)
 3. **Connect and play!**
 
+⚠️ **Security Warnings Expected**: Phantom wallet may show "potentially malicious" warnings for devnet dapps. This is normal for development/testing - click "Proceed Anyway" to continue.
+
 ### 🚦 Current Status:
 - ✅ **Profile & Character Creation**: Fully functional on live site
-- ✅ **Local Battle Demo**: Core mechanics working (commit-reveal, damage, XP)
-- 🚧 **Live Battle Demo**: In progress (works locally, Vercel deployment debugging)
+- ✅ **Battle Demo**: Working on both local and live deployment
+- ✅ **Core Mechanics**: Commit-reveal, damage calculation, XP system, on-chain battles
 - 🎨 **UI/UX**: Placeholder design - currently basic attack only, special attacks coming next
 - 🎯 **Focus**: Core blockchain functionality first, UI polish second
 

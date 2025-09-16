@@ -438,13 +438,23 @@ export default function BattlePage() {
         const dA = xpA1 - xpA0;
         const dB = xpB1 - xpB0;
 
+        // Determine winner display name
+        const getPlayerName = (pubkey: string | null) => {
+          if (!pubkey) return "<none>";
+          if (pubkey === me.toBase58()) return "You (Player A)";
+          if (pubkey === bot.publicKey.toBase58()) return "Bot (Player B)";
+          return pubkey; // fallback to pubkey if unknown
+        };
+
+        const winnerName = getPlayerName(view.winner);
+
         setLog((l) => [
-          `🏆 Winner: ${view.winner ?? "<none>"} (state: ${view.state ?? "unknown"})`,
-          `💀 Final HP - A: ${view.hpChallenger}/200 | B: ${view.hpOpponent}/200`,
+          `🏆 Winner: ${winnerName} (state: ${view.state ?? "unknown"})`,
+          `💀 Final HP - You: ${view.hpChallenger}/200 | Bot: ${view.hpOpponent}/200`,
           `📦 Battle: ${view.pubkey}`,
-          `👤 A: ${view.challenger}`,
-          `🤖 B: ${view.opponent}`,
-          `📊 XP - A: ${xpA0.toString()} → ${xpA1.toString()} (+${dA.toString()}) | B: ${xpB0.toString()} → ${xpB1.toString()} (+${dB.toString()})`,
+          `👤 You: ${view.challenger}`,
+          `🤖 Bot: ${view.opponent}`,
+          `📊 XP - You: ${xpA0.toString()} → ${xpA1.toString()} (+${dA.toString()}) | Bot: ${xpB0.toString()} → ${xpB1.toString()} (+${dB.toString()})`,
           ...l,
         ]);
         console.log("Battle account (raw):", bAccRaw);
