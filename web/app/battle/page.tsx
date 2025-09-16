@@ -229,7 +229,7 @@ export default function BattlePage() {
       // Initiate (single-signer)
       {
         const ix = await program.methods
-          .initiateBattle(bot.publicKey, nonce, new BN(50), new BN(50))
+          .initiateBattle(bot.publicKey, nonce, new BN(300), new BN(300))
           .accounts({
             battle,
             challenger: me,

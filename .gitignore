@@ -23,7 +23,7 @@ coverage/
 
 # Env files (keep an example file tracked)
 .env
-.env.*.local
+.env.*
 !.env.example
 
 # --- Solana / Anchor / Rust ---

@@ -33,7 +33,14 @@ export function Header() {
         </nav>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-xs opacity-70">RPC: {process.env.NEXT_PUBLIC_RPC_URL || "local"}</span>
+        <span className="text-xs opacity-70">
+          RPC: {
+            process.env.NEXT_PUBLIC_RPC_URL?.includes('helius') ? 'Helius Devnet' :
+            process.env.NEXT_PUBLIC_RPC_URL?.includes('devnet.solana.com') ? 'Public Devnet' :
+            process.env.NEXT_PUBLIC_RPC_URL?.includes('localhost') ? 'Localhost' :
+            'Devnet'
+          }
+        </span>
         <WalletMultiButton className="btn" />
       </div>
     </header>
