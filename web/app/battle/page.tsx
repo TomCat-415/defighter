@@ -157,6 +157,8 @@ export default function BattlePage() {
             .rpc()
         );
         setLog((l) => ["Config initialized", ...l]);
+        // Wait for blockhash to update
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
       // --- Ensure players exist/funded ---
@@ -177,6 +179,7 @@ export default function BattlePage() {
             .rpc()
         );
         setLog((l) => ["Created player A", ...l]);
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
       if (!(await connection.getAccountInfo(pdaB))) {

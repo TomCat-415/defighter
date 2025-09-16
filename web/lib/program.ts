@@ -7,7 +7,11 @@ import type { Defighter } from "@/target_types_proxy";   // your generated types
 import idl from "@/idl/defighter.json";                  // <-- vendored IDL (web/idl/defighter.json)
 
 function getProvider(connection: Connection, wallet: any) {
-  return new AnchorProvider(connection, wallet, { commitment: "confirmed" });
+  return new AnchorProvider(connection, wallet, {
+    commitment: "confirmed",
+    skipPreflight: false,
+    preflightCommitment: "confirmed"
+  });
 }
 
 /**

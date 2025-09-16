@@ -17,6 +17,13 @@
 2. **Get free devnet SOL** from [Solana faucet](https://faucet.solana.com/)
 3. **Connect and play!**
 
+### 🚦 Current Status:
+- ✅ **Profile & Character Creation**: Fully functional on live site
+- ✅ **Local Battle Demo**: Core mechanics working (commit-reveal, damage, XP)
+- 🚧 **Live Battle Demo**: In progress (works locally, Vercel deployment debugging)
+- 🎨 **UI/UX**: Placeholder design - currently basic attack only, special attacks coming next
+- 🎯 **Focus**: Core blockchain functionality first, UI polish second
+
 ---
 
 ## What is DeFighter?
@@ -187,13 +194,21 @@ Game balance parameters stored in on-chain Config PDA:
 - **Overflow Protection**: All arithmetic uses checked operations
 - **Access Control**: Admin functions properly gated
 
-## 🤝 Contributing
+## 🚧 Development Notes
 
-This project demonstrates advanced Solana development patterns:
+This project prioritizes **core blockchain functionality** over UI polish to demonstrate advanced Solana development skills:
+
+**Current Implementation:**
+- ✅ **Complex Smart Contract**: Multi-PDA architecture, commit-reveal mechanics, configurable game balance
+- ✅ **Full TypeScript Integration**: Custom SDK, type-safe program interactions
+- ✅ **Proven Concept**: Local demo shows complete battle system works end-to-end
+- 🎨 **UI Expansion Planned**: Special attacks, battle animations, enhanced UX coming next
+
+**Technical Depth Showcased:**
 - Complex state management with multiple PDA types
-- Cryptographic fairness mechanisms
+- Cryptographic fairness mechanisms (commit-reveal)
 - Real-time frontend integration with on-chain state
-- Configurable on-chain parameters
+- Configurable on-chain parameters and game balance
 
 ## 📄 License
 
