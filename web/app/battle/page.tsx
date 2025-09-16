@@ -446,7 +446,7 @@ export default function BattlePage() {
           return pubkey; // fallback to pubkey if unknown
         };
 
-        const winnerName = getPlayerName(view.winner);
+        const winnerName = getPlayerName(view?.winner ?? null);
 
         setLog((l) => [
           `🏆 Winner: ${winnerName} (state: ${view.state ?? "unknown"})`,
