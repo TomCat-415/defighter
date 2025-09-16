@@ -21,7 +21,7 @@
 
 ### 🚦 Current Status:
 - ✅ **Profile & Character Creation**: Fully functional on live site
-- ✅ **Battle Demo**: Working on both local and live deployment
+- ✅ **Battle Demo**: Working on both local and live deployment (for now only basic attacks; special attacks coming soon)
 - ✅ **Core Mechanics**: Commit-reveal, damage calculation, XP system, on-chain battles
 - 🎨 **UI/UX**: Placeholder design - currently basic attack only, special attacks coming next
 - 🎯 **Focus**: Core blockchain functionality first, UI polish second
