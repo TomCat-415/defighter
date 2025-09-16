@@ -439,14 +439,14 @@ export default function BattlePage() {
         const dB = xpB1 - xpB0;
 
         // Determine winner display name
-        const getPlayerName = (pubkey: string | null) => {
+        const getPlayerName = (pubkey: string | null | undefined) => {
           if (!pubkey) return "<none>";
           if (pubkey === me.toBase58()) return "You (Player A)";
           if (pubkey === bot.publicKey.toBase58()) return "Bot (Player B)";
           return pubkey; // fallback to pubkey if unknown
         };
 
-        const winnerName = getPlayerName(view.winner || null);
+        const winnerName = getPlayerName(view.winner);
 
         setLog((l) => [
           `🏆 Winner: ${winnerName} (state: ${view.state ?? "unknown"})`,
