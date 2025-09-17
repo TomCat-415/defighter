@@ -9,6 +9,7 @@ import {
 } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl, Connection } from "@solana/web3.js";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
+import { createConnectionWithTimeouts } from "@/lib/connection";
 
 import "@solana/wallet-adapter-react-ui/styles.css";
 
@@ -26,12 +27,20 @@ export function AppWalletProvider({ children }: { children: ReactNode }) {
     return endpoint;
   }, [endpoint]);
 
+  // Create connection with extended timeouts
+  const connection = useMemo(() => {
+    return createConnectionWithTimeouts(normalizedEndpoint);
+  }, [normalizedEndpoint]);
+
   // Provide WebSocket endpoint to avoid ws://localhost issues
   const wsEndpoint = useMemo(() => {
     try {
       const url = new URL(normalizedEndpoint);
       const sameOrigin = typeof window !== 'undefined' && url.origin === window.location.origin;
-      if (sameOrigin) return 'wss://api.devnet.solana.com';
+      if (sameOrigin) {
+        // For local development with proxy, use the actual devnet WebSocket
+        return 'wss://api.devnet.solana.com';
+      }
       const wsProto = url.protocol === 'https:' ? 'wss:' : 'ws:';
       return `${wsProto}//${url.host}${url.pathname}`;
     } catch {
@@ -42,19 +51,19 @@ export function AppWalletProvider({ children }: { children: ReactNode }) {
   // Health check with normalized endpoint
   useMemo(() => {
     if (typeof window !== 'undefined') {
-      const testConnection = new Connection(normalizedEndpoint, 'confirmed');
-      testConnection.getVersion().catch(() => {
+      connection.getVersion().catch(() => {
         console.warn('RPC health check failed for:', normalizedEndpoint);
       });
     }
-  }, [normalizedEndpoint]);
+  }, [connection, normalizedEndpoint]);
 
   return (
     <ConnectionProvider 
       endpoint={normalizedEndpoint} 
       config={{ 
         commitment: "confirmed", 
-        wsEndpoint 
+        wsEndpoint,
+        confirmTransactionInitialTimeout: 180000 // 3 minutes
       }}
     >
       <WalletProvider wallets={wallets} autoConnect>

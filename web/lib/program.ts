@@ -5,6 +5,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 
 import type { Defighter } from "@/target_types_proxy";   // your generated types
 import idl from "@/idl/defighter.json";                  // <-- vendored IDL (web/idl/defighter.json)
+import { createConnectionWithTimeouts } from "./connection";
 
 function getProvider(connection: Connection, wallet: any) {
   return new AnchorProvider(connection, wallet, {
