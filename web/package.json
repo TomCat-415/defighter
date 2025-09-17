@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "dev:localnet": "cp .env.localnet .env.local && next dev",
-    "dev:devnet": "cp .env.devnet .env.local && next dev"
+    "dev:devnet": "next dev"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",

@@ -196,6 +196,32 @@ Game balance parameters stored in on-chain Config PDA:
 - **Overflow Protection**: All arithmetic uses checked operations
 - **Access Control**: Admin functions properly gated
 
+## 🔐 API Security & Privacy
+
+**Secure RPC Proxy Implementation**: This project implements a server-side RPC proxy to protect sensitive API keys from client-side exposure.
+
+### How It Works:
+- **Client-Side**: Frontend makes requests to `/api/solana` (relative URL)
+- **Server-Side Proxy**: Next.js API route adds Helius API key server-side
+- **Hidden Keys**: API keys never appear in browser DevTools or network requests
+- **WebSocket Safety**: Proper WebSocket endpoint handling prevents `ws://localhost` issues
+
+### Environment Variables:
+```bash
+# Public (safe to expose)
+NEXT_PUBLIC_SOLANA_RPC_URL=/api/solana
+
+# Private (server-side only)
+HELIUS_API_KEY=your_actual_key_here
+RPC_UPSTREAM=https://devnet.helius-rpc.com
+```
+
+### Security Benefits:
+- ✅ **No API Key Exposure**: Keys never sent to client
+- ✅ **DevTools Safe**: Network tab shows only `/api/solana` requests
+- ✅ **Production Ready**: Works identically in development and production
+- ✅ **SSR Compatible**: Proper endpoint normalization for server-side rendering
+
 ## 🚧 Development Notes
 
 This project prioritizes **core blockchain functionality** over UI polish to demonstrate advanced Solana development skills:

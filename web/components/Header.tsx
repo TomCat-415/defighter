@@ -35,9 +35,10 @@ export function Header() {
       <div className="flex items-center gap-3">
         <span className="text-xs opacity-70">
           RPC: {
-            process.env.NEXT_PUBLIC_RPC_URL?.includes('helius') ? 'Helius Devnet' :
-            process.env.NEXT_PUBLIC_RPC_URL?.includes('devnet.solana.com') ? 'Public Devnet' :
-            process.env.NEXT_PUBLIC_RPC_URL?.includes('localhost') ? 'Localhost' :
+            process.env.NEXT_PUBLIC_SOLANA_RPC_URL?.includes('/api/solana') ? 'Secure Proxy' :
+            process.env.NEXT_PUBLIC_SOLANA_RPC_URL?.includes('helius') ? 'Helius Devnet' :
+            process.env.NEXT_PUBLIC_SOLANA_RPC_URL?.includes('devnet.solana.com') ? 'Public Devnet' :
+            process.env.NEXT_PUBLIC_SOLANA_RPC_URL?.includes('localhost') ? 'Localhost' :
             'Devnet'
           }
         </span>

@@ -68,7 +68,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setRpcUrl(process.env.NEXT_PUBLIC_RPC_URL || 'Unknown');
+      setRpcUrl(process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'Unknown');
     }
   }, []);
 
