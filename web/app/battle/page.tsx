@@ -117,6 +117,34 @@ export default function BattlePage() {
     }
   }
 
+  // Helper function to send transaction with blockhash retry
+  async function sendTransactionWithRetry(tx: Transaction, maxRetries = 3): Promise<string> {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Get fresh blockhash for each attempt
+        const { blockhash } = await connection.getLatestBlockhash('confirmed');
+        tx.recentBlockhash = blockhash;
+        
+        // @ts-ignore
+        const phantom = (window as any).phantom?.solana;
+        const signed = await phantom.signTransaction(tx);
+        
+        // Small delay to ensure blockhash is still valid
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        return await connection.sendRawTransaction(signed.serialize());
+      } catch (error: any) {
+        if (error.message?.includes('Blockhash not found') && attempt < maxRetries) {
+          setLog((l) => [`Retry ${attempt}/${maxRetries} due to blockhash error`, ...l]);
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new Error('Max retries exceeded');
+  }
+
   async function runDemo() {
     if (!connection || !publicKey || !wallet) {
       setLog((l) => ["Error: Wallet not connected", ...l]);
@@ -195,15 +223,10 @@ export default function BattlePage() {
 
         const tx = new Transaction().add(ix);
         tx.feePayer = me;
-        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
         tx.partialSign(bot);
 
-        // Phantom signs fee-payer side
-        // @ts-ignore
-        const phantom = (window as any).phantom?.solana;
         const balBefore = await connection.getBalance(me);
-        const signed = await phantom.signTransaction(tx);
-        const sig = await connection.sendRawTransaction(signed.serialize());
+        const sig = await sendTransactionWithRetry(tx);
         await connection.confirmTransaction(sig, "confirmed");
         const balAfter = await connection.getBalance(me);
 
@@ -240,13 +263,9 @@ export default function BattlePage() {
 
         const tx = new Transaction().add(ix);
         tx.feePayer = me;
-        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
 
-        // @ts-ignore
-        const phantom = (window as any).phantom?.solana;
         const balBefore = await connection.getBalance(me);
-        const signed = await phantom.signTransaction(tx);
-        const sig = await connection.sendRawTransaction(signed.serialize());
+        const sig = await sendTransactionWithRetry(tx);
         await connection.confirmTransaction(sig, "confirmed");
         const balAfter = await connection.getBalance(me);
 
@@ -278,13 +297,9 @@ export default function BattlePage() {
 
         const tx = new Transaction().add(ix);
         tx.feePayer = me;
-        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
 
-        // @ts-ignore
-        const phantom = (window as any).phantom?.solana;
         const balBefore = await connection.getBalance(me);
-        const signed = await phantom.signTransaction(tx);
-        const sig = await connection.sendRawTransaction(signed.serialize());
+        const sig = await sendTransactionWithRetry(tx);
         await connection.confirmTransaction(sig, "confirmed");
         const balAfter = await connection.getBalance(me);
 
@@ -308,7 +323,8 @@ export default function BattlePage() {
 
         const tx = new Transaction().add(ix);
         tx.feePayer = me;
-        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+        const { blockhash } = await connection.getLatestBlockhash('confirmed');
+        tx.recentBlockhash = blockhash;
         tx.partialSign(bot);
 
         // @ts-ignore
@@ -341,13 +357,9 @@ export default function BattlePage() {
 
         const tx = new Transaction().add(ix);
         tx.feePayer = me;
-        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
 
-        // @ts-ignore
-        const phantom = (window as any).phantom?.solana;
         const balBefore = await connection.getBalance(me);
-        const signed = await phantom.signTransaction(tx);
-        const sig = await connection.sendRawTransaction(signed.serialize());
+        const sig = await sendTransactionWithRetry(tx);
         await connection.confirmTransaction(sig, "confirmed");
         const balAfter = await connection.getBalance(me);
 
@@ -372,7 +384,8 @@ export default function BattlePage() {
 
         const tx = new Transaction().add(ix);
         tx.feePayer = me;
-        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+        const { blockhash } = await connection.getLatestBlockhash('confirmed');
+        tx.recentBlockhash = blockhash;
         tx.partialSign(bot);
 
         // @ts-ignore
