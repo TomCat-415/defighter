@@ -21,8 +21,9 @@
 
 ### 🚦 Current Status:
 - ✅ **Profile & Character Creation**: Fully functional on live site
-- ✅ **Battle Demo**: Working on both local and live deployment (for now only basic attacks; special attacks coming soon)
+- ✅ **Battle Demo**: Working on both local and live deployment with robust error handling
 - ✅ **Core Mechanics**: Commit-reveal, damage calculation, XP system, on-chain battles
+- ✅ **Production Ready**: Secure API key handling, extended timeouts, blockhash retry logic
 - 🎨 **UI/UX**: Placeholder design - currently basic attack only, special attacks coming next
 - 🎯 **Focus**: Core blockchain functionality first, UI polish second
 
@@ -221,6 +222,22 @@ RPC_UPSTREAM=https://devnet.helius-rpc.com
 - ✅ **DevTools Safe**: Network tab shows only `/api/solana` requests
 - ✅ **Production Ready**: Works identically in development and production
 - ✅ **SSR Compatible**: Proper endpoint normalization for server-side rendering
+
+## 🚀 Production Reliability Features
+
+**Robust Transaction Handling**: The app includes several production-ready features for handling busy Solana networks:
+
+### Extended Timeouts & Retry Logic:
+- **3-minute transaction timeouts** (vs standard 30 seconds) for busy networks
+- **Automatic blockhash retry** mechanism (up to 3 attempts) for expired blockhashes
+- **Extended battle deadlines** (10 minutes per phase) to handle network congestion
+- **Graceful WebSocket fallback** when real-time connections fail
+
+### Network Resilience:
+- **Confirmed blockhashes** for more stable transaction submission
+- **Timing delays** to ensure blockhash validity before sending
+- **Error-specific retry logic** for different failure types
+- **Comprehensive logging** for debugging and monitoring
 
 ## 🚧 Development Notes
 
