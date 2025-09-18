@@ -32,21 +32,11 @@ export function AppWalletProvider({ children }: { children: ReactNode }) {
     return createConnectionWithTimeouts(normalizedEndpoint);
   }, [normalizedEndpoint]);
 
-  // Provide WebSocket endpoint to avoid ws://localhost issues
+  // Optional WebSocket endpoint (env-gated, for silencing logs only)
   const wsEndpoint = useMemo(() => {
-    try {
-      const url = new URL(normalizedEndpoint);
-      const sameOrigin = typeof window !== 'undefined' && url.origin === window.location.origin;
-      if (sameOrigin) {
-        // For local development with proxy, use the actual devnet WebSocket
-        return 'wss://api.devnet.solana.com';
-      }
-      const wsProto = url.protocol === 'https:' ? 'wss:' : 'ws:';
-      return `${wsProto}//${url.host}${url.pathname}`;
-    } catch {
-      return 'wss://api.devnet.solana.com';
-    }
-  }, [normalizedEndpoint]);
+    const fromEnv = process.env.NEXT_PUBLIC_SOLANA_WS_URL as string | undefined;
+    return fromEnv && fromEnv.length > 0 ? fromEnv : undefined;
+  }, []);
 
   // Health check with normalized endpoint
   useMemo(() => {
@@ -58,11 +48,11 @@ export function AppWalletProvider({ children }: { children: ReactNode }) {
   }, [connection, normalizedEndpoint]);
 
   return (
-    <ConnectionProvider 
-      endpoint={normalizedEndpoint} 
-      config={{ 
-        commitment: "confirmed", 
-        wsEndpoint,
+    <ConnectionProvider
+      endpoint={normalizedEndpoint}
+      config={{
+        commitment: "confirmed",
+        ...(wsEndpoint ? { wsEndpoint } : {}),
         confirmTransactionInitialTimeout: 180000 // 3 minutes
       }}
     >

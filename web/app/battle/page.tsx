@@ -6,6 +6,7 @@ import {
   SystemProgram,
   LAMPORTS_PER_SOL,
   Transaction,
+  ComputeBudgetProgram,
 } from "@solana/web3.js";
 import { useState } from "react";
 import { getProgram } from "@/lib/program";
@@ -63,6 +64,25 @@ export default function BattlePage() {
   const [log, setLog] = useState<string[]>([]);
   const [airdropping, setAirdropping] = useState<boolean>(false);
 
+  function formatSol(lamports: number): string {
+    return (lamports / LAMPORTS_PER_SOL).toFixed(6);
+  }
+
+  async function waitForBalanceAtLeast(
+    pk: PublicKey,
+    minLamports: number,
+    timeoutMs = 90000,
+    pollMs = 750
+  ): Promise<boolean> {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const bal = await connection.getBalance(pk);
+      if (bal >= minLamports) return true;
+      await new Promise((r) => setTimeout(r, pollMs));
+    }
+    return false;
+  }
+
   async function logTransactionCost(
     pk: PublicKey,
     operation: string,
@@ -86,35 +106,93 @@ export default function BattlePage() {
     return txSig;
   }
 
+  async function confirmSignatureWithHttp(
+    signature: string,
+    timeoutMs = 180000,
+    pollMs = 1000
+  ): Promise<void> {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const res = await connection.getSignatureStatuses([signature], {
+        searchTransactionHistory: true,
+      });
+      const st = res?.value?.[0] || null;
+      if (st) {
+        if (st.err) throw new Error(`Transaction failed: ${JSON.stringify(st.err)}`);
+        const cs = st.confirmationStatus;
+        if (cs === "confirmed" || cs === "finalized") return;
+      }
+      await new Promise((r) => setTimeout(r, pollMs));
+    }
+    throw new Error(
+      `TransactionExpiredTimeoutError: Transaction was not confirmed in ${(timeoutMs / 1000).toFixed(
+        2
+      )} seconds.`
+    );
+  }
+
   async function ensureFunds(
     pk: PublicKey,
     minSol: number,
     program?: any,
     payer?: PublicKey
   ) {
-    const needLamports = Math.max(0, Math.floor(minSol * LAMPORTS_PER_SOL));
-    const bal = await connection.getBalance(pk);
-    if (bal >= needLamports) return;
+    const targetLamports = Math.max(0, Math.floor(minSol * LAMPORTS_PER_SOL));
+    const current = await connection.getBalance(pk);
+    if (current >= targetLamports) return;
 
+    const shortfall = targetLamports - current;
+    // 1) Try airdrop first
     try {
-      const sig = await connection.requestAirdrop(pk, needLamports - bal);
-      await connection.confirmTransaction(sig, "confirmed");
-      setLog((l) => ["Airdropped to " + pk.toBase58(), ...l]);
-      return;
-    } catch (e: any) {
-      if (!program || !payer) throw e;
-      const lamports = needLamports - bal;
-      const tx = new Transaction().add(
-        SystemProgram.transfer({ fromPubkey: payer, toPubkey: pk, lamports })
-      );
-      // @ts-ignore Anchor provider on the program
-      const provider = program.provider;
-      await provider.sendAndConfirm(tx, []);
+      const sig = await connection.requestAirdrop(pk, shortfall);
       setLog((l) => [
-        `Funded ${pk.toBase58()} with ${lamports / LAMPORTS_PER_SOL} SOL from payer`,
+        `Airdrop requested +${formatSol(shortfall)} SOL → ${pk.toBase58()} (sig: ${sig})`,
+        ...l,
+      ]);
+      await confirmSignatureWithHttp(sig);
+      const ok = await waitForBalanceAtLeast(pk, targetLamports);
+      if (ok) {
+        const newBal = await connection.getBalance(pk);
+        setLog((l) => [
+          `Airdrop success. Balance: ${formatSol(newBal)} SOL`,
+          ...l,
+        ]);
+        return;
+      }
+    } catch (e: any) {
+      // fall through to manual funding
+      setLog((l) => [
+        `Airdrop failed (${e?.message || e}). Considering manual funding...`,
         ...l,
       ]);
     }
+
+    // 2) Optional manual funding (explicit confirmation)
+    if (!program || !payer) {
+      throw new Error("Insufficient funds and no payer available for funding.");
+    }
+    const confirm = typeof window !== "undefined"
+      ? window.confirm(
+          `Airdrop failed. Send ${formatSol(shortfall)} SOL from your wallet to fund ${pk.toBase58()}?`
+        )
+      : false;
+    if (!confirm) {
+      throw new Error("User declined manual funding.");
+    }
+
+    const tx = new Transaction().add(
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
+      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+      SystemProgram.transfer({ fromPubkey: payer, toPubkey: pk, lamports: shortfall })
+    );
+    tx.feePayer = payer;
+    const sig = await sendTransactionWithRetry(tx);
+    await confirmSignatureWithHttp(sig);
+    const after = await connection.getBalance(pk);
+    setLog((l) => [
+      `Manual funding transfer +${formatSol(shortfall)} SOL → ${pk.toBase58()} (Balance: ${formatSol(after)} SOL)`,
+      ...l,
+    ]);
   }
 
   // Helper function to send transaction with blockhash retry
@@ -164,25 +242,36 @@ export default function BattlePage() {
         await logTransactionCost(
           me,
           "Init Config",
-          program.methods
-            .initConfig(
-              10,
-              2,
-              20,
-              10,
-              100,
-              true,
-              false,
-              new BN(10),
-              7500,
-              2000,
-              new BN(10),
-              14000,
-              20,
-              10
-            )
-            .accounts({ config: cfg, admin: me, systemProgram: SystemProgram.programId } as any)
-            .rpc()
+          (async () => {
+            const ix = await program.methods
+              .initConfig(
+                10,
+                2,
+                20,
+                10,
+                100,
+                true,
+                false,
+                new BN(10),
+                7500,
+                2000,
+                new BN(10),
+                14000,
+                20,
+                10
+              )
+              .accounts({ config: cfg, admin: me, systemProgram: SystemProgram.programId } as any)
+              .instruction();
+            const tx = new Transaction().add(
+              ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
+              ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+              ix
+            );
+            tx.feePayer = me;
+            const sig = await sendTransactionWithRetry(tx);
+            await confirmSignatureWithHttp(sig);
+            return sig;
+          })()
         );
         setLog((l) => ["Config initialized", ...l]);
         // Wait for blockhash to update
@@ -194,17 +283,29 @@ export default function BattlePage() {
       const bot = loadOrCreateBotKeypair();
       const [pdaB] = playerPda(bot.publicKey);
 
-      await ensureFunds(me, 2, program, me);
-      await ensureFunds(bot.publicKey, 2, program, me);
+      // Lower, safer thresholds: 0.2 SOL each
+      await ensureFunds(me, 0.2, program, me);
+      await ensureFunds(bot.publicKey, 0.2, program, me);
 
       if (!(await connection.getAccountInfo(pdaA))) {
         await logTransactionCost(
           me,
           "Create Player A",
-          program.methods
-            .createPlayer({ shitposter: {} })
-            .accounts({ player: pdaA, authority: me, systemProgram: SystemProgram.programId } as any)
-            .rpc()
+          (async () => {
+            const ix = await program.methods
+              .createPlayer({ shitposter: {} })
+              .accounts({ player: pdaA, authority: me, systemProgram: SystemProgram.programId } as any)
+              .instruction();
+            const tx = new Transaction().add(
+              ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
+              ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+              ix
+            );
+            tx.feePayer = me;
+            const sig = await sendTransactionWithRetry(tx);
+            await confirmSignatureWithHttp(sig);
+            return sig;
+          })()
         );
         setLog((l) => ["Created player A", ...l]);
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -221,13 +322,17 @@ export default function BattlePage() {
           } as any)
           .instruction();
 
-        const tx = new Transaction().add(ix);
+        const tx = new Transaction().add(
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+          ix
+        );
         tx.feePayer = me;
         tx.partialSign(bot);
 
         const balBefore = await connection.getBalance(me);
         const sig = await sendTransactionWithRetry(tx);
-        await connection.confirmTransaction(sig, "confirmed");
+        await confirmSignatureWithHttp(sig);
         const balAfter = await connection.getBalance(me);
 
         setLog((l) => [
@@ -261,12 +366,16 @@ export default function BattlePage() {
           } as any)
           .instruction();
 
-        const tx = new Transaction().add(ix);
+        const tx = new Transaction().add(
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+          ix
+        );
         tx.feePayer = me;
 
         const balBefore = await connection.getBalance(me);
         const sig = await sendTransactionWithRetry(tx);
-        await connection.confirmTransaction(sig, "confirmed");
+        await confirmSignatureWithHttp(sig);
         const balAfter = await connection.getBalance(me);
 
         setLog((l) => [
@@ -295,12 +404,16 @@ export default function BattlePage() {
           } as any)
           .instruction();
 
-        const tx = new Transaction().add(ix);
+        const tx = new Transaction().add(
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+          ix
+        );
         tx.feePayer = me;
 
         const balBefore = await connection.getBalance(me);
         const sig = await sendTransactionWithRetry(tx);
-        await connection.confirmTransaction(sig, "confirmed");
+        await confirmSignatureWithHttp(sig);
         const balAfter = await connection.getBalance(me);
 
         setLog((l) => [
@@ -321,7 +434,11 @@ export default function BattlePage() {
           } as any)
           .instruction();
 
-        const tx = new Transaction().add(ix);
+        const tx = new Transaction().add(
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+          ix
+        );
         tx.feePayer = me;
         const { blockhash } = await connection.getLatestBlockhash('confirmed');
         tx.recentBlockhash = blockhash;
@@ -332,7 +449,7 @@ export default function BattlePage() {
         const balBefore = await connection.getBalance(me);
         const signed = await phantom.signTransaction(tx);
         const sig = await connection.sendRawTransaction(signed.serialize());
-        await connection.confirmTransaction(sig, "confirmed");
+        await confirmSignatureWithHttp(sig);
         const balAfter = await connection.getBalance(me);
 
         setLog((l) => [
@@ -355,12 +472,16 @@ export default function BattlePage() {
           } as any)
           .instruction();
 
-        const tx = new Transaction().add(ix);
+        const tx = new Transaction().add(
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+          ix
+        );
         tx.feePayer = me;
 
         const balBefore = await connection.getBalance(me);
         const sig = await sendTransactionWithRetry(tx);
-        await connection.confirmTransaction(sig, "confirmed");
+        await confirmSignatureWithHttp(sig);
         const balAfter = await connection.getBalance(me);
 
         setLog((l) => [
@@ -393,7 +514,7 @@ export default function BattlePage() {
         const balBefore = await connection.getBalance(me);
         const signed = await phantom.signTransaction(tx);
         const sig = await connection.sendRawTransaction(signed.serialize());
-        await connection.confirmTransaction(sig, "confirmed");
+        await confirmSignatureWithHttp(sig);
         const balAfter = await connection.getBalance(me);
 
         setLog((l) => [
@@ -404,20 +525,27 @@ export default function BattlePage() {
         setLog((l) => ["Moves revealed", ...l]);
       }
 
-      // Resolve (single-signer via Anchor .rpc is fine)
+      // Resolve (single-signer via manual send + HTTP confirm)
       await logTransactionCost(
         me,
         "Resolve Battle",
-        program.methods
-          .resolveBattle()
-          .accounts({
-            battle,
-            playerChallenger: pdaA,
-            playerOpponent: pdaB,
-            config: cfg,
-            clock: new PublicKey("SysvarC1ock11111111111111111111111111111111"),
-          } as any)
-          .rpc()
+        (async () => {
+          const ix = await program.methods
+            .resolveBattle()
+            .accounts({
+              battle,
+              playerChallenger: pdaA,
+              playerOpponent: pdaB,
+              config: cfg,
+              clock: new PublicKey("SysvarC1ock11111111111111111111111111111111"),
+            } as any)
+            .instruction();
+          const tx = new Transaction().add(ix);
+          tx.feePayer = me;
+          const sig = await sendTransactionWithRetry(tx);
+          await confirmSignatureWithHttp(sig);
+          return sig;
+        })()
       );
       setLog((l) => ["Battle resolved", ...l]);
 
@@ -495,7 +623,7 @@ export default function BattlePage() {
         publicKey,
         amountSol * LAMPORTS_PER_SOL
       );
-      await connection.confirmTransaction(sig, "confirmed");
+      await confirmSignatureWithHttp(sig);
       setLog((l) => [
         `Airdropped ${amountSol} SOL to ${publicKey.toBase58()}`,
         ...l,
