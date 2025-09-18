@@ -131,6 +131,50 @@ export default function BattlePage() {
     );
   }
 
+  // Batch sign (if supported) and send transactions sequentially with HTTP confirms
+  async function signAndSendBatch(
+    transactions: Transaction[],
+    labels: string[],
+    feePayer: PublicKey
+  ): Promise<string[]> {
+    const { blockhash } = await connection.getLatestBlockhash('confirmed');
+    for (const tx of transactions) {
+      tx.feePayer = feePayer;
+      tx.recentBlockhash = blockhash;
+    }
+
+    let signed: Transaction[] = [];
+    const adapter: any = (wallet as any)?.adapter;
+    if (adapter?.signAllTransactions) {
+      signed = await adapter.signAllTransactions(transactions);
+    } else {
+      // Fallback: sign individually (may prompt multiple times)
+      for (const tx of transactions) {
+        // @ts-ignore Phantom in browser
+        const phantom = (window as any).phantom?.solana;
+        const s = await phantom.signTransaction(tx);
+        signed.push(s);
+      }
+    }
+
+    const signatures: string[] = [];
+    for (let i = 0; i < signed.length; i++) {
+      const before = await connection.getBalance(feePayer);
+      const sig = await connection.sendRawTransaction(signed[i].serialize());
+      await confirmSignatureWithHttp(sig);
+      const after = await connection.getBalance(feePayer);
+      setLog((l) => [
+        `[${labels[i]}] Cost: ${(((before - after) / LAMPORTS_PER_SOL)).toFixed(6)} SOL`,
+        `[${labels[i]}] TX: ${sig}`,
+        ...l,
+      ]);
+      signatures.push(sig);
+      await new Promise((r) => setTimeout(r, 250));
+    }
+
+    return signatures;
+  }
+
   async function ensureFunds(
     pk: PublicKey,
     minSol: number,
@@ -332,16 +376,25 @@ export default function BattlePage() {
       const nonce = new BN(Date.now() + Math.floor(Math.random() * 1_000_000));
       const [battle] = battlePda(me, bot.publicKey, nonce);
 
-      // Build single-signer bundle: Create Player A (if needed) + Initiate Battle
+      // Build single-signer set for batch signing: Create Player A (if needed) and Initiate
       {
-        const ixs: any[] = [];
+        const singleSignerTxs: Transaction[] = [];
+        const labels: string[] = [];
+
         if (needCreateA) {
           const createAIx = await program.methods
             .createPlayer({ shitposter: {} })
             .accounts({ player: pdaA, authority: me, systemProgram: SystemProgram.programId } as any)
             .instruction();
-          ixs.push(createAIx);
+          const txA = new Transaction().add(
+            ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
+            ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5_000 }),
+            createAIx
+          );
+          singleSignerTxs.push(txA);
+          labels.push("Create Player A");
         }
+
         const initiateIx = await program.methods
           .initiateBattle(bot.publicKey, nonce, new BN(1500), new BN(1500))
           .accounts({
@@ -351,25 +404,15 @@ export default function BattlePage() {
             clock: new PublicKey("SysvarC1ock11111111111111111111111111111111"),
           } as any)
           .instruction();
-        ixs.push(initiateIx);
-
-        const tx = new Transaction().add(
+        const txI = new Transaction().add(
           ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
           ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5_000 }),
-          ...ixs
+          initiateIx
         );
-        tx.feePayer = me;
+        singleSignerTxs.push(txI);
+        labels.push("Initiate Battle");
 
-        const balBefore = await connection.getBalance(me);
-        const sig = await sendTransactionWithRetry(tx);
-        await confirmSignatureWithHttp(sig);
-        const balAfter = await connection.getBalance(me);
-
-        setLog((l) => [
-          `[Bundle Initiate${needCreateA ? "+CreateA" : ""}] Cost: ${((balBefore - balAfter) / LAMPORTS_PER_SOL).toFixed(6)} SOL`,
-          `[Bundle Initiate] TX: ${sig}`,
-          ...l,
-        ]);
+        await signAndSendBatch(singleSignerTxs, labels, me);
         setLog((l) => ["Battle initiated", ...l]);
       }
 
