@@ -182,7 +182,7 @@ export default function BattlePage() {
 
     const tx = new Transaction().add(
       ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
-      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5_000 }),
       SystemProgram.transfer({ fromPubkey: payer, toPubkey: pk, lamports: shortfall })
     );
     tx.feePayer = payer;
@@ -264,7 +264,7 @@ export default function BattlePage() {
               .instruction();
             const tx = new Transaction().add(
               ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
-              ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+              ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5_000 }),
               ix
             );
             tx.feePayer = me;
@@ -287,29 +287,7 @@ export default function BattlePage() {
       await ensureFunds(me, 0.2, program, me);
       await ensureFunds(bot.publicKey, 0.2, program, me);
 
-      if (!(await connection.getAccountInfo(pdaA))) {
-        await logTransactionCost(
-          me,
-          "Create Player A",
-          (async () => {
-            const ix = await program.methods
-              .createPlayer({ shitposter: {} })
-              .accounts({ player: pdaA, authority: me, systemProgram: SystemProgram.programId } as any)
-              .instruction();
-            const tx = new Transaction().add(
-              ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
-              ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
-              ix
-            );
-            tx.feePayer = me;
-            const sig = await sendTransactionWithRetry(tx);
-            await confirmSignatureWithHttp(sig);
-            return sig;
-          })()
-        );
-        setLog((l) => ["Created player A", ...l]);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
+      const needCreateA = !(await connection.getAccountInfo(pdaA));
 
       if (!(await connection.getAccountInfo(pdaB))) {
         // Multi-signer (bot + Phantom) path
@@ -324,7 +302,7 @@ export default function BattlePage() {
 
         const tx = new Transaction().add(
           ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
-          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5_000 }),
           ix
         );
         tx.feePayer = me;
@@ -354,9 +332,17 @@ export default function BattlePage() {
       const nonce = new BN(Date.now() + Math.floor(Math.random() * 1_000_000));
       const [battle] = battlePda(me, bot.publicKey, nonce);
 
-      // Initiate (single-signer)
+      // Build single-signer bundle: Create Player A (if needed) + Initiate Battle
       {
-        const ix = await program.methods
+        const ixs: any[] = [];
+        if (needCreateA) {
+          const createAIx = await program.methods
+            .createPlayer({ shitposter: {} })
+            .accounts({ player: pdaA, authority: me, systemProgram: SystemProgram.programId } as any)
+            .instruction();
+          ixs.push(createAIx);
+        }
+        const initiateIx = await program.methods
           .initiateBattle(bot.publicKey, nonce, new BN(1500), new BN(1500))
           .accounts({
             battle,
@@ -365,11 +351,12 @@ export default function BattlePage() {
             clock: new PublicKey("SysvarC1ock11111111111111111111111111111111"),
           } as any)
           .instruction();
+        ixs.push(initiateIx);
 
         const tx = new Transaction().add(
           ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
-          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
-          ix
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5_000 }),
+          ...ixs
         );
         tx.feePayer = me;
 
@@ -379,8 +366,8 @@ export default function BattlePage() {
         const balAfter = await connection.getBalance(me);
 
         setLog((l) => [
-          `[Initiate Battle] Cost: ${((balBefore - balAfter) / LAMPORTS_PER_SOL).toFixed(6)} SOL`,
-          `[Initiate Battle] TX: ${sig}`,
+          `[Bundle Initiate${needCreateA ? "+CreateA" : ""}] Cost: ${((balBefore - balAfter) / LAMPORTS_PER_SOL).toFixed(6)} SOL`,
+          `[Bundle Initiate] TX: ${sig}`,
           ...l,
         ]);
         setLog((l) => ["Battle initiated", ...l]);
@@ -406,7 +393,7 @@ export default function BattlePage() {
 
         const tx = new Transaction().add(
           ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
-          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5_000 }),
           ix
         );
         tx.feePayer = me;
@@ -436,7 +423,7 @@ export default function BattlePage() {
 
         const tx = new Transaction().add(
           ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
-          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5_000 }),
           ix
         );
         tx.feePayer = me;
@@ -474,7 +461,7 @@ export default function BattlePage() {
 
         const tx = new Transaction().add(
           ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
-          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 1_000 }),
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5_000 }),
           ix
         );
         tx.feePayer = me;
