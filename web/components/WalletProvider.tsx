@@ -1,13 +1,13 @@
 "use client";
 
-import { ReactNode, useMemo } from "react";
+import { ReactNode, useMemo, useEffect } from "react";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
-import { clusterApiUrl, Connection } from "@solana/web3.js";
+import { clusterApiUrl } from "@solana/web3.js";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { createConnectionWithTimeouts } from "@/lib/connection";
 
@@ -16,7 +16,10 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 export function AppWalletProvider({ children }: { children: ReactNode }) {
   const fallbackEndpoint = clusterApiUrl(WalletAdapterNetwork.Devnet);
   const endpoint = (process.env.NEXT_PUBLIC_SOLANA_RPC_URL as string) || fallbackEndpoint;
-  const wallets = useMemo(() => [new PhantomWalletAdapter(), new SolflareWalletAdapter()], []);
+  const wallets = useMemo(() => [
+    new PhantomWalletAdapter(),
+    new SolflareWalletAdapter(),
+  ], []);
 
   // Normalize endpoint for SSR safety
   const normalizedEndpoint = useMemo(() => {
@@ -27,25 +30,21 @@ export function AppWalletProvider({ children }: { children: ReactNode }) {
     return endpoint;
   }, [endpoint]);
 
-  // Create connection with extended timeouts
-  const connection = useMemo(() => {
-    return createConnectionWithTimeouts(normalizedEndpoint);
-  }, [normalizedEndpoint]);
-
   // Optional WebSocket endpoint (env-gated, for silencing logs only)
   const wsEndpoint = useMemo(() => {
     const fromEnv = process.env.NEXT_PUBLIC_SOLANA_WS_URL as string | undefined;
     return fromEnv && fromEnv.length > 0 ? fromEnv : undefined;
   }, []);
 
-  // Health check with normalized endpoint
-  useMemo(() => {
-    if (typeof window !== 'undefined') {
-      connection.getVersion().catch(() => {
-        console.warn('RPC health check failed for:', normalizedEndpoint);
-      });
-    }
-  }, [connection, normalizedEndpoint]);
+  // Lightweight health check as an effect (ephemeral connection), avoid SSR/hydration races
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const conn = createConnectionWithTimeouts(normalizedEndpoint);
+    conn.getVersion().catch((e: unknown) => {
+      const msg = (e as { message?: string } | undefined)?.message || e;
+      console.warn('RPC health check failed for:', normalizedEndpoint, msg);
+    });
+  }, [normalizedEndpoint]);
 
   return (
     <ConnectionProvider
@@ -56,7 +55,12 @@ export function AppWalletProvider({ children }: { children: ReactNode }) {
         confirmTransactionInitialTimeout: 180000 // 3 minutes
       }}
     >
-      <WalletProvider wallets={wallets} autoConnect>
+      <WalletProvider
+        wallets={wallets}
+        autoConnect={false}
+        localStorageKey="defighter-wallet"
+        onError={(err) => console.warn('Wallet adapter error:', err)}
+      >
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>

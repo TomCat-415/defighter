@@ -143,18 +143,29 @@ export default function BattlePage() {
       tx.recentBlockhash = blockhash;
     }
 
-    let signed: Transaction[] = [];
     const adapter: any = (wallet as any)?.adapter;
-    if (adapter?.signAllTransactions) {
-      signed = await adapter.signAllTransactions(transactions);
-    } else {
-      // Fallback: sign individually (may prompt multiple times)
-      for (const tx of transactions) {
-        // @ts-ignore Phantom in browser
-        const phantom = (window as any).phantom?.solana;
-        const s = await phantom.signTransaction(tx);
-        signed.push(s);
+    let signed: Transaction[] = [];
+    try {
+      if (adapter?.signAllTransactions) {
+        signed = await adapter.signAllTransactions(transactions);
+      } else {
+        signed = [];
+        for (const tx of transactions) {
+          try {
+            signed.push(await adapter.signTransaction(tx));
+          } catch (e: any) {
+            console.error('WalletSignTransactionError:', e?.message || e);
+            console.error('cause:', (e as any)?.cause || (e as any)?.originalError);
+            console.log('adapter name:', adapter?.name);
+            console.log('supported versions:', adapter?.supportedTransactionVersions);
+            throw e;
+          }
+        }
       }
+    } catch (e: any) {
+      console.error('Batch sign failed:', e?.message || e);
+      console.error('adapter name:', adapter?.name);
+      throw e;
     }
 
     const signatures: string[] = [];
@@ -247,9 +258,29 @@ export default function BattlePage() {
         const { blockhash } = await connection.getLatestBlockhash('confirmed');
         tx.recentBlockhash = blockhash;
         
-        // @ts-ignore
-        const phantom = (window as any).phantom?.solana;
-        const signed = await phantom.signTransaction(tx);
+        const adapter: any = (wallet as any)?.adapter;
+        // Optional Wallet Standard sign-in (no-op for Phantom/Solflare)
+        try {
+          if (typeof adapter?.signIn === 'function') {
+            await adapter.signIn({});
+          }
+          if (typeof adapter?.connect === 'function' && !adapter.connected) {
+            await adapter.connect();
+          }
+        } catch (e) {
+          console.warn('Wallet sign-in/connect skipped or failed:', e);
+        }
+
+        let signed: Transaction;
+        try {
+          signed = await adapter.signTransaction(tx);
+        } catch (e: any) {
+          console.error('WalletSignTransactionError:', e?.message || e);
+          console.error('cause:', (e as any)?.cause || (e as any)?.originalError);
+          console.log('adapter name:', adapter?.name);
+          console.log('supported versions:', adapter?.supportedTransactionVersions);
+          throw e;
+        }
         
         // Small delay to ensure blockhash is still valid
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -327,9 +358,16 @@ export default function BattlePage() {
       const bot = loadOrCreateBotKeypair();
       const [pdaB] = playerPda(bot.publicKey);
 
-      // Lower, safer thresholds: 0.2 SOL each
-      await ensureFunds(me, 0.2, program, me);
-      await ensureFunds(bot.publicKey, 0.2, program, me);
+      // Balance gate only (no auto-airdrop/transfer). Require small minimum to proceed.
+      const minUserLamports = Math.floor(0.02 * LAMPORTS_PER_SOL);
+      const userBal = await connection.getBalance(me);
+      if (userBal < minUserLamports) {
+        setLog((l) => [
+          `Insufficient SOL: need ≥ 0.02 SOL to run demo. Use the Faucet/Airdrop button, then retry.`,
+          ...l,
+        ]);
+        return;
+      }
 
       const needCreateA = !(await connection.getAccountInfo(pdaA));
 
@@ -350,8 +388,24 @@ export default function BattlePage() {
           ix
         );
         tx.feePayer = me;
+        const { blockhash: blockhashCreateB } = await connection.getLatestBlockhash('confirmed');
+        tx.recentBlockhash = blockhashCreateB;
+        // Pre-simulate to surface real errors early
+        try {
+          const sim = await connection.simulateTransaction(tx);
+          if (sim.value.err) {
+            console.error('Sim err (Create B):', sim.value.err);
+            console.error('Logs:', sim.value.logs);
+            throw new Error('Simulation failed for Create Player B');
+          }
+        } catch (e) {
+          console.warn('Simulation warning (Create B):', e);
+        }
         tx.partialSign(bot);
 
+        // Refresh blockhash right before final sign to avoid expiry
+        const { blockhash: bhFinalCreateB } = await connection.getLatestBlockhash('confirmed');
+        tx.recentBlockhash = bhFinalCreateB;
         const balBefore = await connection.getBalance(me);
         const sig = await sendTransactionWithRetry(tx);
         await confirmSignatureWithHttp(sig);
@@ -472,12 +526,40 @@ export default function BattlePage() {
         tx.feePayer = me;
         const { blockhash } = await connection.getLatestBlockhash('confirmed');
         tx.recentBlockhash = blockhash;
+        // Pre-simulate to catch program errors early
+        try {
+          const sim = await connection.simulateTransaction(tx);
+          if (sim.value.err) {
+            console.error('Sim err (Commit B):', sim.value.err);
+            console.error('Logs:', sim.value.logs);
+            throw new Error('Simulation failed for Commit B');
+          }
+        } catch (e) {
+          console.warn('Simulation warning (Commit B):', e);
+        }
         tx.partialSign(bot);
 
-        // @ts-ignore
-        const phantom = (window as any).phantom?.solana;
+        const adapter: any = (wallet as any)?.adapter;
+        // Refresh blockhash again just before user signs
+        const { blockhash: bh2 } = await connection.getLatestBlockhash('confirmed');
+        tx.recentBlockhash = bh2;
         const balBefore = await connection.getBalance(me);
-        const signed = await phantom.signTransaction(tx);
+        let signed: Transaction;
+        try {
+          if (typeof adapter?.signIn === 'function') {
+            await adapter.signIn({});
+          }
+          if (typeof adapter?.connect === 'function' && !adapter.connected) {
+            await adapter.connect();
+          }
+          signed = await adapter.signTransaction(tx);
+        } catch (e: any) {
+          console.error('WalletSignTransactionError:', e?.message || e);
+          console.error('cause:', (e as any)?.cause || (e as any)?.originalError);
+          console.log('adapter name:', adapter?.name);
+          console.log('supported versions:', adapter?.supportedTransactionVersions);
+          throw e;
+        }
         const sig = await connection.sendRawTransaction(signed.serialize());
         await confirmSignatureWithHttp(sig);
         const balAfter = await connection.getBalance(me);
@@ -537,12 +619,38 @@ export default function BattlePage() {
         tx.feePayer = me;
         const { blockhash } = await connection.getLatestBlockhash('confirmed');
         tx.recentBlockhash = blockhash;
+        try {
+          const sim = await connection.simulateTransaction(tx);
+          if (sim.value.err) {
+            console.error('Sim err (Reveal B):', sim.value.err);
+            console.error('Logs:', sim.value.logs);
+            throw new Error('Simulation failed for Reveal B');
+          }
+        } catch (e) {
+          console.warn('Simulation warning (Reveal B):', e);
+        }
         tx.partialSign(bot);
 
-        // @ts-ignore
-        const phantom = (window as any).phantom?.solana;
+        const adapter: any = (wallet as any)?.adapter;
+        const { blockhash: bh3 } = await connection.getLatestBlockhash('confirmed');
+        tx.recentBlockhash = bh3;
         const balBefore = await connection.getBalance(me);
-        const signed = await phantom.signTransaction(tx);
+        let signed: Transaction;
+        try {
+          if (typeof adapter?.signIn === 'function') {
+            await adapter.signIn({});
+          }
+          if (typeof adapter?.connect === 'function' && !adapter.connected) {
+            await adapter.connect();
+          }
+          signed = await adapter.signTransaction(tx);
+        } catch (e: any) {
+          console.error('WalletSignTransactionError:', e?.message || e);
+          console.error('cause:', (e as any)?.cause || (e as any)?.originalError);
+          console.log('adapter name:', adapter?.name);
+          console.log('supported versions:', adapter?.supportedTransactionVersions);
+          throw e;
+        }
         const sig = await connection.sendRawTransaction(signed.serialize());
         await confirmSignatureWithHttp(sig);
         const balAfter = await connection.getBalance(me);
