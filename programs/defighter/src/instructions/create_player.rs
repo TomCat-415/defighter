@@ -4,9 +4,12 @@ use crate::state::player::{Player, FighterClass};
 #[derive(Accounts)]
 #[instruction(class: FighterClass)]
 pub struct CreatePlayer<'info> {
+    /// The payer who will fund the rent for the new player account (user wallet)
+    #[account(mut)]
+    pub payer: Signer<'info>,
     #[account(
         init,
-        payer = authority,
+        payer = payer,
         seeds = [b"player", authority.key().as_ref()],
         bump,
         space = 8 + 32 + 1 + 8 + (2*3) + 4 + 1

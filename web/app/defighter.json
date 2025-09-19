@@ -109,6 +109,14 @@
       ],
       "accounts": [
         {
+          "name": "payer",
+          "docs": [
+            "The payer who will fund the rent for the new player account (user wallet)"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
           "name": "player",
           "writable": true,
           "pda": {

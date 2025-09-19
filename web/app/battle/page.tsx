@@ -261,9 +261,7 @@ export default function BattlePage() {
         const adapter: any = (wallet as any)?.adapter;
         // Optional Wallet Standard sign-in (no-op for Phantom/Solflare)
         try {
-          if (typeof adapter?.signIn === 'function') {
-            await adapter.signIn({});
-          }
+          // Omit signIn() for Brave/Standard paths; not required for Phantom and may error
           if (typeof adapter?.connect === 'function' && !adapter.connected) {
             await adapter.connect();
           }
@@ -378,6 +376,7 @@ export default function BattlePage() {
           .accounts({
             player: pdaB,
             authority: bot.publicKey,
+            payer: me,
             systemProgram: SystemProgram.programId,
           } as any)
           .instruction();
@@ -401,13 +400,27 @@ export default function BattlePage() {
         } catch (e) {
           console.warn('Simulation warning (Create B):', e);
         }
-        tx.partialSign(bot);
-
-        // Refresh blockhash right before final sign to avoid expiry
+        // Refresh blockhash right before user signs
         const { blockhash: bhFinalCreateB } = await connection.getLatestBlockhash('confirmed');
         tx.recentBlockhash = bhFinalCreateB;
+        const adapter: any = (wallet as any)?.adapter;
+        let sig: string;
         const balBefore = await connection.getBalance(me);
-        const sig = await sendTransactionWithRetry(tx);
+        try {
+          if (typeof adapter?.connect === 'function' && !adapter.connected) {
+            await adapter.connect();
+          }
+          // User signs first, then bot partial signs, then send
+          let signedTx_User: Transaction = await adapter.signTransaction(tx);
+          signedTx_User.partialSign(bot);
+          sig = await connection.sendRawTransaction(signedTx_User.serialize());
+        } catch (e: any) {
+          console.warn('signTransaction failed (Create B), trying sendTransaction fallback:', e?.message || e);
+          const { blockhash: bhFallback } = await connection.getLatestBlockhash('confirmed');
+          tx.recentBlockhash = bhFallback;
+          tx.partialSign(bot);
+          sig = await (adapter as any).sendTransaction(tx, connection, { skipPreflight: false });
+        }
         await confirmSignatureWithHttp(sig);
         const balAfter = await connection.getBalance(me);
 
@@ -438,7 +451,7 @@ export default function BattlePage() {
         if (needCreateA) {
           const createAIx = await program.methods
             .createPlayer({ shitposter: {} })
-            .accounts({ player: pdaA, authority: me, systemProgram: SystemProgram.programId } as any)
+            .accounts({ player: pdaA, authority: me, payer: me, systemProgram: SystemProgram.programId } as any)
             .instruction();
           const txA = new Transaction().add(
             ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
@@ -537,30 +550,26 @@ export default function BattlePage() {
         } catch (e) {
           console.warn('Simulation warning (Commit B):', e);
         }
-        tx.partialSign(bot);
-
         const adapter: any = (wallet as any)?.adapter;
         // Refresh blockhash again just before user signs
         const { blockhash: bh2 } = await connection.getLatestBlockhash('confirmed');
         tx.recentBlockhash = bh2;
+        let sig: string;
         const balBefore = await connection.getBalance(me);
-        let signed: Transaction;
         try {
-          if (typeof adapter?.signIn === 'function') {
-            await adapter.signIn({});
-          }
           if (typeof adapter?.connect === 'function' && !adapter.connected) {
             await adapter.connect();
           }
-          signed = await adapter.signTransaction(tx);
+          let signedUser: Transaction = await adapter.signTransaction(tx);
+          signedUser.partialSign(bot);
+          sig = await connection.sendRawTransaction(signedUser.serialize());
         } catch (e: any) {
-          console.error('WalletSignTransactionError:', e?.message || e);
-          console.error('cause:', (e as any)?.cause || (e as any)?.originalError);
-          console.log('adapter name:', adapter?.name);
-          console.log('supported versions:', adapter?.supportedTransactionVersions);
-          throw e;
+          console.warn('signTransaction failed (Commit B), trying sendTransaction fallback:', e?.message || e);
+          const { blockhash: bh2f } = await connection.getLatestBlockhash('confirmed');
+          tx.recentBlockhash = bh2f;
+          tx.partialSign(bot);
+          sig = await (adapter as any).sendTransaction(tx, connection, { skipPreflight: false });
         }
-        const sig = await connection.sendRawTransaction(signed.serialize());
         await confirmSignatureWithHttp(sig);
         const balAfter = await connection.getBalance(me);
 
@@ -629,29 +638,25 @@ export default function BattlePage() {
         } catch (e) {
           console.warn('Simulation warning (Reveal B):', e);
         }
-        tx.partialSign(bot);
-
         const adapter: any = (wallet as any)?.adapter;
         const { blockhash: bh3 } = await connection.getLatestBlockhash('confirmed');
         tx.recentBlockhash = bh3;
+        let sig: string;
         const balBefore = await connection.getBalance(me);
-        let signed: Transaction;
         try {
-          if (typeof adapter?.signIn === 'function') {
-            await adapter.signIn({});
-          }
           if (typeof adapter?.connect === 'function' && !adapter.connected) {
             await adapter.connect();
           }
-          signed = await adapter.signTransaction(tx);
+          let signedUser2: Transaction = await adapter.signTransaction(tx);
+          signedUser2.partialSign(bot);
+          sig = await connection.sendRawTransaction(signedUser2.serialize());
         } catch (e: any) {
-          console.error('WalletSignTransactionError:', e?.message || e);
-          console.error('cause:', (e as any)?.cause || (e as any)?.originalError);
-          console.log('adapter name:', adapter?.name);
-          console.log('supported versions:', adapter?.supportedTransactionVersions);
-          throw e;
+          console.warn('signTransaction failed (Reveal B), trying sendTransaction fallback:', e?.message || e);
+          const { blockhash: bh3f } = await connection.getLatestBlockhash('confirmed');
+          tx.recentBlockhash = bh3f;
+          tx.partialSign(bot);
+          sig = await (adapter as any).sendTransaction(tx, connection, { skipPreflight: false });
         }
-        const sig = await connection.sendRawTransaction(signed.serialize());
         await confirmSignatureWithHttp(sig);
         const balAfter = await connection.getBalance(me);
 
