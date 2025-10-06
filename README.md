@@ -31,7 +31,7 @@
 
 ## What is DeFighter?
 
-DeFighter is a sophisticated on-chain PvP battle system that combines game theory, cryptographic fairness, and Solana's high-performance blockchain. Players choose from crypto-native character archetypes and engage in strategic battles using commit-reveal mechanics to ensure fairness and prevent front-running.
+DeFighter is a sophisticated on-chain PvP battle system that combines game theory, cryptographic fairness, and Solana's high-performance blockchain. Players choose from crypto-native character archetypes and engage in strategic battles using commit-reveal mechanics to ensure fairness and prevent front-running
 
 ### 🎯 Key Features
 
