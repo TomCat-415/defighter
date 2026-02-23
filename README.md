@@ -264,3 +264,4 @@ MIT License - Feel free to use this code as reference for your own Solana projec
 **Tech Stack**: Rust • Anchor • Solana • TypeScript • Next.js • Tailwind CSS • Web3.js
 
 Built with ❤️ for the Solana ecosystem
+
